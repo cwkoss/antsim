@@ -1,19 +1,21 @@
 {
   "current_generation": 3,
   "description": "Text rendering fixes and enhanced directional indicators",
-  "timestamp": "2025-08-24T08:00:00Z",
+  "timestamp": "2025-08-24T17:04:18Z",
   "video_filename": "0003_readable_text_enhanced_indicators.mp4",
   "performance_metrics": {
-    "deliveries_per_minute": 17.3,
-    "average_return_time_seconds": 18.9,
-    "average_time_since_goal_seconds": 8.5,
+    "deliveries_per_minute": 28.5,
+    "average_return_time_seconds": 12.4,
+    "average_time_since_goal_seconds": null,
     "simulation_duration_seconds": 300,
-    "target_frames": 2350
+    "target_frames": 593,
+    "frames_captured": 3555
   },
   "key_changes": [
     "Fixed text rendering bug - replaced solid rectangles with readable bitmap font patterns",
     "Enhanced directional indicators to 2x2 white squares for better visibility",
-    "Added comprehensive character bitmap patterns (A-Z, 0-9, symbols)",
+    "Added comprehensive character bitmap patterns (A-Z, a-z, 0-9, symbols)",
+    "Fixed text truncation - removed ellipsis limitation for full description display",
     "Increased directional indicator distance from ant center for clarity",
     "Implemented generation history tracking system"
   ],

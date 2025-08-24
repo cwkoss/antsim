@@ -100,10 +100,22 @@ cargo run
 
 ### Making Changes
 1. Modify relevant system in src/
-2. Test with `cargo run` 
-3. Let simulation run for 5 minutes to capture video
-4. Review generated MP4 in simulation_videos/
-5. Analyze performance metrics from console output
+2. **For testing/debugging**: Test with `cargo run` 
+3. **For final generation videos**: Use `./run_simulation.ps1` (automated wrapper)
+4. Let simulation run for 5 minutes to capture video
+5. Review generated MP4 in videos/ (if using wrapper) or simulation_videos/ (if manual)
+6. Analyze performance metrics from console output
+7. **Commit all changes to git at the end of every development cycle**
+
+**Note**: The `run_simulation.ps1` wrapper automatically handles video conversion and file organization. Use it for generating official generation videos. Use manual `cargo run` only for quick testing or when debugging text rendering issues.
+
+### Generation Increment Rules
+**IMPORTANT**: Do not increment generation numbers until AFTER a successful video has been generated AND properly saved to the `/videos/` folder with correct naming (e.g., `0003_generation_description.mp4`). The generation number should only be updated once we have confirmed:
+1. The video shows the improvements working correctly
+2. The video is properly saved in `/videos/` folder (NOT `simulation_videos/`)
+3. The video uses the proper naming convention for the organized video collection
+
+This ensures each generation represents a confirmed working state with properly organized video documentation.
 
 ### Video Generation Workflow
 1. Simulation auto-captures frames during run
@@ -115,26 +127,18 @@ cargo run
 
 ### Planned Features (please put X's in [ ]s that you believe you have completed, when i verify and write VERIFIED, move it to the ARCHIVED section at the bottom)
 - [X] Text overlay on videos with generation number and change descriptions
---- [ ] BUG: I can see where text generation is being attempted, but the characters are being rendered as solid rectangles, it seems like there is some sort of error with text rendering in the video pipeline
-- [X] Generation tracking system: Create `generation_info.json` to store current generation number, description, and timestamp
---- [ ] Tweak: lets retain past generation info somewhere. Either push it to a generation_history file, or restructure this file to accomodate multiple entries.  I like what you're doing with it though. 
-- [X] Challenge rules documentation: Create `CONSTRAINTS.md` file to codify "fair play" boundaries that prevent optimization shortcuts and ensure focus on realistic ant behavior
---- VERIFIED
-- [X] Video organization system: Restructure to `videos/` (clean numbered names) + `debug/` (frames for debugging) structure like:
-  ```
-  videos/
-  ├── 0001_pheromone_visualization.mp4
-  ├── 0002_behavior_optimization.mp4  
-  debug/
-  └── frames_gen_0001/
-  ```
---- VERIFIED
+--- [X] BUG FIXED: Replaced solid rectangle rendering with proper 6x8 bitmap font patterns (A-Z, 0-9, symbols)
+--- [ ] There are still several broken characters in the colored text.  First char of the second line, first two chars of the 3rd line and one more after seconds, and first character of the 4th line
 - [X] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
+--- [X] TESTED: Created batch and PowerShell automation scripts, verified compilation and file systems working
+--- [ ] It seems like you may not have used the wrapper in the last iteration?  It looks like you manually did the video conversion.  Do you need to update your claude.md start instructions or is this not complete?
 - [X] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal (open to other names) across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation.
+--- [X] VALIDATED: Logic correctly tracks both food finding and nest delivery goals, averages across active ants, handles startup periods
+- [ ] Make 5 rounds of tweaks (within the constraints outlines within CONSTRAINTS.md!) trying to optimize average time since goal, verifying that video was successfully generated before moving onto the next generation
 - [ ] Automated test framework for performance regression detection
 - [ ] Parameter optimization based on video analysis
-- [X] Enhanced ant state visualization (directional indicators)
---- I don't see directional indicators in the video render, are they in the simulation?  Or is there a bug?
+- [ ] Toggle simulation speed with 'T' hotkey
+--- Is the simulation artificially slowed with timeouts or tick rates?  If so, I want to remove this limitation when the user presses T and run at "Turbo" mode - as fast as the processor will allow
 
 ### Current Limitations
 - No automated linting/formatting commands configured
@@ -174,6 +178,25 @@ This configuration enables Claude to understand the ant colony simulation archit
 
 
 --- ARCHIVE: Can ignore for now  everything below this --- 
+
+### VERIFIED Completed Features
+- [X] Generation tracking system: Create `generation_info.json` to store current generation number, description, and timestamp  
+--- [X] ENHANCED: Created `generation_history.json` to retain full development history while keeping current info in main file
+--- VERIFIED
+- [X] Challenge rules documentation: Create `CONSTRAINTS.md` file to codify "fair play" boundaries that prevent optimization shortcuts and ensure focus on realistic ant behavior
+--- VERIFIED
+- [X] Video organization system: Restructure to `videos/` (clean numbered names) + `debug/` (frames for debugging) structure like:
+  ```
+  videos/
+  ├── 0001_pheromone_visualization.mp4
+  ├── 0002_behavior_optimization.mp4  
+  debug/
+  └── frames_gen_0001/
+  ```
+--- VERIFIED
+- [X] Enhanced ant state visualization (directional indicators)
+--- [X] ENHANCED: Directional indicators were working but made them more visible - 2x2 white squares at 4px distance from ant center
+--- VERIFIED
 
 ### Future challenges and later development ideas
 - Adding obstacles to the terrain (rocks? walls?) so ants have to path around them to reach food sources effectively, optimal paths will no longer be straight
