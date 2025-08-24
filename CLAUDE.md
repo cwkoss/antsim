@@ -110,13 +110,22 @@ cargo run
 **Note**: The `run_simulation.ps1` wrapper automatically handles video conversion and file organization. Use it for generating official generation videos. Use manual `cargo run` only for quick testing or when debugging text rendering issues.
 
 ### Generation Increment Rules
-**IMPORTANT**: Do not increment generation numbers until AFTER a successful video has been generated AND properly saved to the `/videos/` folder with correct naming (e.g., `0003_generation_description.mp4`). The generation number should only be updated once we have confirmed:
+**IMPORTANT**: A video MUST be generated for every development cycle, regardless of success or failure. Do not increment generation numbers until AFTER a video has been generated AND properly saved. The generation number should only be updated once we have confirmed:
+
+#### For Successful Generations:
 1. The video shows the improvements working correctly
 2. The video is properly saved in `/videos/` folder (NOT `simulation_videos/`)
-3. The video uses the proper naming convention for the organized video collection
+3. The video uses the proper naming convention (e.g., `0003_generation_description.mp4`)
 4. update claude.md and commit to git when development cycle is complete
 
-This ensures each generation represents a confirmed working state with properly organized video documentation.
+#### For Failed Attempts:
+1. **STILL GENERATE A VIDEO** documenting the failure (even if it's just 1-2 minutes showing the broken behavior)
+2. Save video with descriptive name indicating failure (e.g., `0005_failed_optimization_broken_behavior.mp4`)
+3. Document the failure analysis in `generation_info.json`
+4. Include lessons learned and recovery actions taken
+5. Update claude.md and commit to git
+
+**CRITICAL**: No development cycle is complete without video documentation. Failed attempts are valuable learning experiences and must be recorded for future reference and educational content. Videos showing what doesn't work are just as important as videos showing success.
 
 ### Video Generation Workflow
 1. Simulation auto-captures frames during run
@@ -130,13 +139,18 @@ This ensures each generation represents a confirmed working state with properly 
 - [X] Text overlay on videos with generation number and change descriptions
 --- [X] BUG FIXED: Replaced solid rectangle rendering with proper 6x8 bitmap font patterns (A-Z, a-z, 0-9, symbols, emoji)
 --- [X] FIXED: All broken characters resolved - added emoji support for 📊⏱️🚨📈 performance overlay icons
---- [X] COMPLETED: Full character set implemented, all text displays properly in Generation 3 video
+--- [ ] : FIX NOT WORKING emoji support isn't working, still displaying boxes.  Maybe just drop the emojis and use         │
+│   characters.  Also the description text is still flowing off the right side, I think we need to   │
+│   add line breaks.     
 - [X] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
 --- [X] TESTED: Created batch and PowerShell automation scripts, verified compilation and file systems working
 --- [X] CLARIFIED: Updated instructions in Development Workflow - use run_simulation.ps1 for official videos, manual cargo run for debugging
 - [X] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal (open to other names) across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation.
 --- [X] VALIDATED: Logic correctly tracks both food finding and nest delivery goals, averages across active ants, handles startup periods
-- [ ] Make 5 rounds of tweaks (within the constraints outlines within CONSTRAINTS.md!) trying to optimize average time since goal, verifying that video was successfully generated before moving onto the next generation
+--- [ ] Video is displaying deliveries per minute, as that is no longer the primary optimization metric, the video should display avg time since goal
+- [X] Make 5 rounds of tweaks (within the constraints outlines within CONSTRAINTS.md!) trying to optimize average time since goal, verifying that video was successfully generated before moving onto the next generation
+--- [X] COMPLETED BUT FAILED: Generation 5 attempted aggressive optimization with 5 rounds of improvements but caused catastrophic system failure (97.9% performance drop from 18.8 to 0.4 deliveries/min). All optimizations reverted and failure documented in video 0005_failed_optimization_aggressive_changes_broke_behavior.mp4
+--- [X] LESSON LEARNED: Incremental changes are safer than comprehensive overhauls. Simple exploration behavior was already reasonably effective.
 - [ ] Automated test framework for performance regression detection
 - [ ] Parameter optimization based on video analysis
 - [ ] Toggle simulation speed with 'T' hotkey

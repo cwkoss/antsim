@@ -19,7 +19,6 @@ pub fn sensing_system(
             
             // Update timers
             ant.sensing_timer -= delta_time;
-            ant.momentum_timer -= delta_time;
             ant.startup_timer -= delta_time;
             
             // Don't process ants that are collecting food
@@ -27,191 +26,37 @@ pub fn sensing_system(
                 continue;
             }
             
-            // STARTUP GRACE PERIOD: Simple exploration for newly spawned ants
-            if ant.startup_timer > 0.0 {
-                // Simple, smooth exploration without sensing complexity
-                apply_stable_exploration(&mut velocity, &config, ant.current_direction);
-                continue; // Skip all the complex behavior
-            }
-            
-            // Determine pheromone type to follow
-            let pheromone_type = if ant.carrying_food {
-                PheromoneType::Nest
-            } else {
-                PheromoneType::Food
-            };
-            
+            // Simple exploration behavior for all states
             match ant.behavior_state {
                 AntBehaviorState::Exploring => {
-                    // SIMPLIFIED: Just do stable exploration, no complex sensing
-                    apply_stable_exploration(&mut velocity, &config, ant.current_direction);
+                    if ant.sensing_timer <= 0.0 {
+                        // Random direction changes for exploration
+                        if rand::random::<f32>() < 0.1 * delta_time {
+                            let angle_change = (rand::random::<f32>() - 0.5) * 1.0;
+                            ant.current_direction += angle_change;
+                            velocity.x = ant.current_direction.cos() * 100.0;
+                            velocity.y = ant.current_direction.sin() * 100.0;
+                        }
+                        ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
+                    }
                 },
                 
                 AntBehaviorState::Sensing => {
-                    // SIMPLIFIED: Skip complex sensing, just do stable exploration
+                    // Simple sensing - just continue exploring
                     ant.behavior_state = AntBehaviorState::Exploring;
-                    apply_stable_exploration(&mut velocity, &config, ant.current_direction);
-                    /*
-                    if ant.sensing_timer <= 0.0 {
-                        // SUPER INTELLIGENT SENSING: Use all 5 advanced techniques
-                        let samples = grid.sample_all_directions(pos.x, pos.y, pheromone_type);
-                        ant.last_sensing_result = samples;
-                        
-                        // 1. GRADIENT-BASED DIRECTION: Calculate weighted direction instead of strongest
-                        let (gradient_direction, max_strength, calculated_quality) = 
-                            calculate_gradient_direction(&samples, ant.current_direction, &ant.trail_memory);
-                        
-                        // 2. TRAIL QUALITY ASSESSMENT: Evaluate trail consistency and strength
-                        ant.trail_quality = assess_trail_quality(&samples, ant.trail_quality);
-                        
-                        // 3. HYSTERESIS SYSTEM: Dynamic thresholds based on current state
-                        let mut effective_threshold = ant.hysteresis_threshold;
-                        if ant.behavior_state == AntBehaviorState::Following {
-                            // Higher threshold to stay on current trail (stickiness)
-                            effective_threshold *= 0.6; // 40% easier to continue following
-                        } else {
-                            // Standard threshold for new trails
-                            effective_threshold = config.detection_threshold;
-                        }
-                        
-                        // Check direction change magnitude for oscillation detection
-                        let direction_change = (gradient_direction - ant.current_direction).abs().min(
-                            2.0 * std::f32::consts::PI - (gradient_direction - ant.current_direction).abs()
-                        );
-                        
-                        if direction_change > std::f32::consts::PI / 2.0 { // > 90 degree change (more lenient)
-                            ant.direction_changes += 1;
-                        }
-                        
-                        // Update dynamic threshold based on trail quality and recent behavior
-                        ant.hysteresis_threshold = if ant.trail_quality > 0.7 {
-                            config.detection_threshold * 0.8 // Lower threshold for high quality trails
-                        } else {
-                            config.detection_threshold * 1.2 // Higher threshold for poor quality trails
-                        };
-                        
-                        ant.trail_strength = max_strength;
-                        ant.last_pheromone_strength = max_strength;
-                        
-                        // Decision logic with quality and hysteresis considerations (more lenient)
-                        let should_follow = max_strength > effective_threshold && 
-                                          ant.trail_quality > 0.1 && // TEST 1: Lower quality requirement
-                                          calculated_quality > 0.05; // TEST 1: Much lower immediate sensing quality requirement
-                        
-                        if should_follow {
-                            // Check anti-oscillation measures
-                            if ant.direction_changes > 8 && ant.stuck_timer > 5.0 { // TEST 1: More lenient anti-oscillation
-                                // Force long exploration to break pathological oscillation
-                                ant.behavior_state = AntBehaviorState::Exploring;
-                                ant.sensing_timer = 5.0 + rand::random::<f32>() * 3.0;
-                                ant.direction_changes = 0;
-                                ant.consecutive_good_trail_time = 0.0;
-                                apply_random_walk(&mut velocity, &config);
-                            } else {
-                                // 4. TRAIL MEMORY: Update memory with new direction
-                                let current_index = ant.memory_index;
-                                ant.trail_memory[current_index] = gradient_direction;
-                                ant.memory_index = (current_index + 1) % ant.trail_memory.len();
-                                
-                                // Transition to following high-quality trail
-                                ant.behavior_state = AntBehaviorState::Following;
-                                ant.current_direction = gradient_direction;
-                                
-                                // Momentum based on trail quality (better trails = longer commitment)
-                                ant.momentum_timer = 1.0 + ant.trail_quality * 3.0;
-                                ant.consecutive_good_trail_time += delta_time;
-                                
-                                let speed = if ant.carrying_food { 85.0 } else { 110.0 };
-                                velocity.x = gradient_direction.cos() * speed;
-                                velocity.y = gradient_direction.sin() * speed;
-                            }
-                        } else {
-                            // No suitable trail found
-                            ant.behavior_state = AntBehaviorState::Exploring;
-                            ant.sensing_timer = 1.5 + rand::random::<f32>() * 2.0;
-                            ant.consecutive_good_trail_time = 0.0;
-                            apply_random_walk(&mut velocity, &config);
-                        }
-                    }
-                    */
+                    ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
                 },
                 
                 AntBehaviorState::Following => {
-                    // 5. PREDICTIVE SENSING: Look ahead in current direction instead of full 8-direction scan
-                    let ahead_distance = 20.0;
-                    let current_strength = grid.sample_directional(pos.x, pos.y, ant.current_direction, ahead_distance, pheromone_type);
-                    
-                    // Sample slightly left and right of current direction for course correction
-                    let left_direction = ant.current_direction - std::f32::consts::PI / 8.0; // 22.5 degrees left
-                    let right_direction = ant.current_direction + std::f32::consts::PI / 8.0; // 22.5 degrees right
-                    let left_strength = grid.sample_directional(pos.x, pos.y, left_direction, ahead_distance, pheromone_type);
-                    let right_strength = grid.sample_directional(pos.x, pos.y, right_direction, ahead_distance, pheromone_type);
-                    
-                    // Update trail quality based on predictive sensing
-                    let predictive_samples = [0.0, 0.0, right_strength, 0.0, current_strength, 0.0, left_strength, 0.0];
-                    ant.trail_quality = assess_trail_quality(&predictive_samples, ant.trail_quality);
-                    
-                    // Hysteresis: Trail must weaken significantly to abandon (stickiness)
-                    let abandon_threshold = ant.trail_strength * 0.4; // More tolerant than before
-                    let quality_threshold = 0.2; // Minimum acceptable quality while following
-                    
-                    if current_strength < abandon_threshold || 
-                       ant.trail_quality < quality_threshold || 
-                       ant.momentum_timer <= 0.0 {
-                        // Trail degraded enough to warrant re-sensing
-                        ant.behavior_state = AntBehaviorState::Sensing;
-                        ant.sensing_timer = 0.2; // Quick re-sense
-                        ant.consecutive_good_trail_time = 0.0;
-                    } else {
-                        // Continue following with potential course correction
-                        let mut best_direction = ant.current_direction;
-                        let mut best_strength = current_strength;
-                        
-                        // Minor course corrections based on predictive sensing
-                        if left_strength > best_strength * 1.15 { // 15% better to left
-                            best_direction = left_direction;
-                            best_strength = left_strength;
-                        } else if right_strength > best_strength * 1.15 { // 15% better to right
-                            best_direction = right_direction;
-                            best_strength = right_strength;
-                        }
-                        
-                        // Update trail memory with refined direction
-                        if best_direction != ant.current_direction {
-                            let current_index = ant.memory_index;
-                            ant.trail_memory[current_index] = best_direction;
-                            ant.memory_index = (current_index + 1) % ant.trail_memory.len();
-                        }
-                        
-                        ant.current_direction = best_direction;
-                        ant.trail_strength = best_strength;
-                        ant.consecutive_good_trail_time += delta_time;
-                        
-                        // Speed based on trail quality and confidence
-                        let base_speed = if ant.carrying_food { 85.0 } else { 115.0 };
-                        let quality_multiplier = 0.8 + (ant.trail_quality * 0.4); // 0.8 to 1.2x speed
-                        let speed = base_speed * quality_multiplier;
-                        
-                        velocity.x = ant.current_direction.cos() * speed;
-                        velocity.y = ant.current_direction.sin() * speed;
-                    }
+                    // Simple following - just continue exploring
+                    ant.behavior_state = AntBehaviorState::Exploring;
+                    ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
                 },
                 
                 AntBehaviorState::Tracking => {
-                    // Monitor gradient while moving
-                    let samples = grid.sample_all_directions(pos.x, pos.y, pheromone_type);
-                    let (best_direction, best_strength, _quality) = calculate_gradient_direction(&samples, ant.current_direction, &ant.trail_memory);
-                    
-                    if best_strength > ant.trail_strength * 1.5 {
-                        // Much stronger trail found
-                        ant.behavior_state = AntBehaviorState::Following;
-                        ant.current_direction = best_direction;
-                        ant.trail_strength = best_strength;
-                        ant.momentum_timer = 2.0;
-                    } else if ant.momentum_timer <= 0.0 {
-                        ant.behavior_state = AntBehaviorState::Sensing;
-                        ant.sensing_timer = 0.1;
-                    }
+                    // Simple tracking - just continue exploring
+                    ant.behavior_state = AntBehaviorState::Exploring;
+                    ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
                 }
             }
             
@@ -220,570 +65,50 @@ pub fn sensing_system(
                 ant.current_direction = velocity.y.atan2(velocity.x);
             }
             
-            // Stuck detection and performance tracking
+            // Basic stuck detection
             let current_pos = Vec2::new(pos.x, pos.y);
             let distance_moved = current_pos.distance(ant.last_position);
             
-            if distance_moved < 5.0 { // Haven't moved much (tighter threshold)
+            if distance_moved < 5.0 {
                 ant.stuck_timer += delta_time;
+                if ant.stuck_timer > 3.0 {
+                    // Simple stuck recovery
+                    ant.current_direction = rand::random::<f32>() * std::f32::consts::TAU;
+                    velocity.x = ant.current_direction.cos() * 100.0;
+                    velocity.y = ant.current_direction.sin() * 100.0;
+                    ant.stuck_timer = 0.0;
+                }
             } else {
                 ant.stuck_timer = 0.0;
-                ant.direction_changes = (ant.direction_changes.saturating_sub(1)).max(0); // Decay direction changes over time
             }
             ant.last_position = current_pos;
-            
-            // Adapt sensitivity to avoid saturation
-            if ant.trail_strength > 0.1 {
-                ant.sensitivity_adapt = (ant.sensitivity_adapt * 0.99 + ant.trail_strength * 0.01).min(1.0);
-            } else {
-                ant.sensitivity_adapt = (ant.sensitivity_adapt * 0.99 + 0.01).max(0.1);
-            }
         }
-    }
-}
-
-fn calculate_gradient_direction(samples: &[f32; 8], current_direction: f32, trail_memory: &[f32; 5]) -> (f32, f32, f32) {
-    let directions = [
-        0.0,                          // North
-        std::f32::consts::PI / 4.0,           // NE  
-        std::f32::consts::PI / 2.0,           // East
-        3.0 * std::f32::consts::PI / 4.0,     // SE
-        std::f32::consts::PI,                 // South
-        5.0 * std::f32::consts::PI / 4.0,     // SW
-        3.0 * std::f32::consts::PI / 2.0,     // West
-        7.0 * std::f32::consts::PI / 4.0,     // NW
-    ];
-    
-    // Calculate weighted average direction based on pheromone strengths
-    let mut weighted_x = 0.0;
-    let mut weighted_y = 0.0;
-    let mut total_weight = 0.0;
-    let mut max_strength: f32 = 0.0;
-    
-    for (i, &strength) in samples.iter().enumerate() {
-        if strength > 0.001 { // Only consider meaningful strengths
-            let direction = directions[i];
-            let weight = strength.powf(2.0); // Square for more decisive weighting
-            
-            weighted_x += direction.cos() * weight;
-            weighted_y += direction.sin() * weight;
-            total_weight += weight;
-            max_strength = max_strength.max(strength);
-        }
-    }
-    
-    if total_weight > 0.001 {
-        // Normalize weighted direction vector to avoid bias
-        let gradient_length = (weighted_x * weighted_x + weighted_y * weighted_y).sqrt();
-        if gradient_length > 0.001 {
-            weighted_x /= gradient_length;
-            weighted_y /= gradient_length;
-        }
-        
-        let gradient_direction = weighted_y.atan2(weighted_x);
-        
-        // Apply trail memory influence (prefer consistency)
-        let memory_influence = calculate_memory_direction(trail_memory);
-        let memory_weight = 0.2; // Reduced memory influence to 20%
-        
-        // More careful vector averaging to avoid bias
-        let gradient_vec_x = gradient_direction.cos();
-        let gradient_vec_y = gradient_direction.sin();
-        let memory_vec_x = memory_influence.cos();
-        let memory_vec_y = memory_influence.sin();
-        
-        let final_x = gradient_vec_x * (1.0 - memory_weight) + memory_vec_x * memory_weight;
-        let final_y = gradient_vec_y * (1.0 - memory_weight) + memory_vec_y * memory_weight;
-        
-        // Fix rightward bias: ensure proper atan2 usage and normalize
-        let final_length = (final_x * final_x + final_y * final_y).sqrt();
-        let final_direction = if final_length > 0.001 {
-            final_y.atan2(final_x) // Correct atan2 usage: atan2(y, x)
-        } else {
-            current_direction
-        };
-        
-        // Calculate trail quality (consistency across samples)
-        let variance = calculate_direction_variance(samples, &directions);
-        let quality = (1.0 / (1.0 + variance * 3.0)).clamp(0.0, 1.0); // Less harsh quality penalty
-        
-        (final_direction, max_strength, quality)
-    } else {
-        // No significant pheromone detected - continue in current direction or random
-        (current_direction, 0.0, 0.0)
-    }
-}
-
-fn calculate_memory_direction(trail_memory: &[f32; 5]) -> f32 {
-    let mut sum_x = 0.0;
-    let mut sum_y = 0.0;
-    
-    for &direction in trail_memory {
-        sum_x += direction.cos();
-        sum_y += direction.sin();
-    }
-    
-    sum_y.atan2(sum_x)
-}
-
-fn calculate_direction_variance(samples: &[f32; 8], directions: &[f32; 8]) -> f32 {
-    let mut weighted_directions = Vec::new();
-    
-    for (i, &strength) in samples.iter().enumerate() {
-        if strength > 0.001 {
-            for _ in 0..(strength * 100.0) as usize {
-                weighted_directions.push(directions[i]);
-            }
-        }
-    }
-    
-    if weighted_directions.len() < 2 {
-        return 0.0;
-    }
-    
-    let mean = weighted_directions.iter().sum::<f32>() / weighted_directions.len() as f32;
-    let variance: f32 = weighted_directions
-        .iter()
-        .map(|&x| {
-            let diff = (x - mean + std::f32::consts::PI) % (2.0 * std::f32::consts::PI) - std::f32::consts::PI;
-            diff * diff
-        })
-        .sum::<f32>() / weighted_directions.len() as f32;
-    
-    variance
-}
-
-fn update_trail_memory(trail_memory: &mut [f32; 5], memory_index: &mut usize, new_direction: f32) {
-    trail_memory[*memory_index] = new_direction;
-    *memory_index = (*memory_index + 1) % trail_memory.len();
-}
-
-fn assess_trail_quality(samples: &[f32; 8], previous_quality: f32) -> f32 {
-    let max_strength: f32 = samples.iter().fold(0.0f32, |a, &b| a.max(b));
-    let total_strength: f32 = samples.iter().sum();
-    let average_strength = total_strength / 8.0;
-    
-    // Quality factors:
-    // 1. Strength consistency (low variance is good)
-    // 2. Overall strength level
-    // 3. Presence of clear gradient (not uniform)
-    
-    let consistency = if max_strength > 0.001 {
-        1.0 - (total_strength - max_strength * 8.0).abs() / (max_strength * 8.0)
-    } else {
-        0.0
-    };
-    
-    let strength_factor = (max_strength * 2.0).clamp(0.0, 1.0);
-    let gradient_clarity = if total_strength > 0.001 {
-        max_strength / average_strength
-    } else {
-        1.0
-    };
-    
-    let new_quality = (consistency * 0.4 + strength_factor * 0.4 + (gradient_clarity / 8.0) * 0.2).clamp(0.0, 1.0);
-    
-    // Smooth quality changes
-    previous_quality * 0.7 + new_quality * 0.3
-}
-
-fn apply_random_walk(velocity: &mut Velocity, config: &SimConfig) {
-    // Generate truly random angle to avoid directional bias
-    let random_angle = rand::random::<f32>() * std::f32::consts::TAU;
-    let noise_strength = config.base_exploration_noise * 150.0;
-    
-    // Apply noise in random direction
-    velocity.x += random_angle.cos() * noise_strength;
-    velocity.y += random_angle.sin() * noise_strength;
-    
-    let speed_limit = 120.0;
-    let current_speed = (velocity.x * velocity.x + velocity.y * velocity.y).sqrt();
-    if current_speed > speed_limit {
-        velocity.x = (velocity.x / current_speed) * speed_limit;
-        velocity.y = (velocity.y / current_speed) * speed_limit;
-    }
-}
-
-fn apply_stable_exploration(velocity: &mut Velocity, _config: &SimConfig, current_direction: f32) {
-    // VERY gentle exploration with minimal jitter
-    let current_speed = (velocity.x * velocity.x + velocity.y * velocity.y).sqrt();
-    
-    if current_speed < 30.0 {
-        // If moving too slow, give it a direction based on current direction with slight randomness
-        let slight_variation = (rand::random::<f32>() - 0.5) * 0.1; // ±0.05 radians = ±3 degrees
-        let new_direction = current_direction + slight_variation;
-        velocity.x = new_direction.cos() * 70.0;
-        velocity.y = new_direction.sin() * 70.0;
-    } else {
-        // VERY small course corrections - like a gentle drift
-        let tiny_adjustment = (rand::random::<f32>() - 0.5) * 0.05; // ±0.025 radians = ±1.4 degrees  
-        let new_direction = current_direction + tiny_adjustment;
-        
-        // Very gradual adjustment toward new direction
-        let target_x = new_direction.cos() * 70.0;
-        let target_y = new_direction.sin() * 70.0;
-        
-        // 95% current direction, 5% adjustment - very smooth
-        velocity.x = velocity.x * 0.95 + target_x * 0.05;
-        velocity.y = velocity.y * 0.95 + target_y * 0.05;
-    }
-    
-    // Maintain consistent speed
-    let final_speed = (velocity.x * velocity.x + velocity.y * velocity.y).sqrt();
-    if final_speed > 0.1 {
-        let target_speed = 70.0;
-        velocity.x = (velocity.x / final_speed) * target_speed;
-        velocity.y = (velocity.y / final_speed) * target_speed;
     }
 }
 
 pub fn movement_system(
-    mut ants: Query<(&mut Transform, &mut Velocity, &mut AntState)>,
-    pheromone_grid: Option<Res<PheromoneGrid>>,
-    nests: Query<&Transform, (With<Nest>, Without<AntState>)>,
-    config: Res<SimConfig>,
-) {
-    // Get nest position for direct homing
-    let nest_pos = if let Ok(nest_transform) = nests.get_single() {
-        nest_transform.translation
-    } else {
-        Vec3::ZERO
-    };
-    
-    if let Some(grid) = pheromone_grid {
-        for (mut transform, mut velocity, mut ant) in ants.iter_mut() {
-            // Don't move ants that are collecting food
-            if ant.food_collection_timer > 0.0 {
-                continue;
-            }
-            let pos = transform.translation;
-            
-            // Determine which pheromone to follow
-            let pheromone_type = if ant.carrying_food {
-                PheromoneType::Nest
-            } else {
-                PheromoneType::Food
-            };
-            
-            let (left, front, right) = grid.sample_gradient(pos.x, pos.y, pheromone_type);
-            
-            // Apply sensitivity adaptation
-            let adapted_left = (left - ant.sensitivity_adapt).max(0.0).min(config.saturation_limit);
-            let adapted_front = (front - ant.sensitivity_adapt).max(0.0).min(config.saturation_limit);
-            let adapted_right = (right - ant.sensitivity_adapt).max(0.0).min(config.saturation_limit);
-            
-            let max_pheromone = adapted_left.max(adapted_front).max(adapted_right);
-            
-            // Movement decision
-            let mut rng = rand::thread_rng();
-            // Very high threshold for food-carrying ants to prioritize direct homing
-            let detection_threshold = if ant.carrying_food {
-                config.detection_threshold * 100.0 // 100x higher threshold = almost ignore pheromones
-            } else {
-                config.detection_threshold
-            };
-            
-            let direction = if max_pheromone > detection_threshold {
-                // Check if transitioning from exploration to trail following for faster turning
-                let was_exploring = ant.last_pheromone_strength <= detection_threshold;
-                let turn_strength = if was_exploring && !ant.carrying_food {
-                    2.0 // Much stronger turn when first detecting trail
-                } else {
-                    0.8 // Normal trail following turn strength
-                };
-                
-                // Follow gradient deterministically - turn toward strongest pheromone
-                if adapted_left > adapted_front && adapted_left > adapted_right {
-                    -turn_strength // Turn left toward strongest pheromone
-                } else if adapted_right > adapted_front && adapted_right > adapted_left {
-                    turn_strength // Turn right toward strongest pheromone
-                } else {
-                    // Front is strongest (or tied) - go straight with small random component
-                    (rng.gen::<f32>() - 0.5) * 0.2
-                }
-            } else if ant.carrying_food {
-                // CRITICAL FIX: Ultra-reliable nest homing for food-carrying ants
-                let to_nest = nest_pos - pos;
-                let distance_to_nest = to_nest.length();
-                
-                // Always home to nest regardless of distance - never get lost!
-                if distance_to_nest > 5.0 { // Any distance from nest center
-                    let current_angle = velocity.y.atan2(velocity.x);
-                    let desired_angle = to_nest.y.atan2(to_nest.x);
-                    let angle_diff = (desired_angle - current_angle + std::f32::consts::PI) % (2.0 * std::f32::consts::PI) - std::f32::consts::PI;
-                    
-                    // EMERGENCY: Maximum possible homing strength to fix lost carriers
-                    let homing_strength = if distance_to_nest > 400.0 {
-                        8.0 // Emergency ultra-strong homing when very far
-                    } else if distance_to_nest > 300.0 {
-                        7.0 // Ultra-strong homing when far
-                    } else if distance_to_nest > 200.0 {
-                        6.0 // Very strong homing
-                    } else if distance_to_nest > 100.0 {
-                        5.0 // Strong homing
-                    } else {
-                        4.0 // Still strong when close
-                    };
-                    
-                    // Clamp the angle difference to prevent extreme turns
-                    let clamped_angle_diff = angle_diff.clamp(-1.0, 1.0);
-                    clamped_angle_diff * homing_strength
-                } else {
-                    // Very close to nest - minimal correction
-                    0.1
-                }
-            } else {
-                // Random exploration for exploring ants
-                rng.gen::<f32>() * 2.0 - 1.0
-            };
-            
-            // Update velocity
-            let current_angle = velocity.y.atan2(velocity.x);
-            
-            // Use less noise based on ant state and pheromone detection
-            let exploration_factor = if ant.carrying_food {
-                config.base_exploration_noise * 0.01 // MINIMAL random turning when carrying food
-            } else if max_pheromone > detection_threshold {
-                config.base_exploration_noise * 0.1 // Much less noise when following pheromone trail
-            } else {
-                config.base_exploration_noise // Full exploration when no pheromones detected
-            };
-            
-            // CRITICAL: Special handling for food-carrying ants - bypass exploration factor
-            if ant.carrying_food {
-                // Direct angle calculation for nest homing - ignore exploration factor completely
-                let to_nest = nest_pos - pos;
-                if to_nest.length() > 5.0 {
-                    let nest_angle = to_nest.y.atan2(to_nest.x);
-                    let speed = 2.5; // Even faster for urgent nest return
-                    velocity.x = nest_angle.cos() * speed;
-                    velocity.y = nest_angle.sin() * speed;
-                } else {
-                    // Very close to nest - slow down
-                    velocity.x *= 0.5;
-                    velocity.y *= 0.5;
-                }
-            } else {
-                // Normal movement for non-food-carrying ants
-                let new_angle = current_angle + direction * exploration_factor;
-                let speed = 2.0; // OPTIMIZATION 1: Increased from 1.5 to 2.0 for faster movement
-                
-                velocity.x = new_angle.cos() * speed;
-                velocity.y = new_angle.sin() * speed;
-            }
-            
-            // Update position
-            let old_pos = Vec2::new(transform.translation.x, transform.translation.y);
-            transform.translation.x += velocity.x;
-            transform.translation.y += velocity.y;
-            
-            // BOUNDARY HANDLING: Bounce off edges to prevent getting stuck
-            let world_boundary = (config.world_size as f32) * 0.5; // -500 to +500
-            let mut bounced = false;
-            
-            if transform.translation.x < -world_boundary {
-                transform.translation.x = -world_boundary;
-                velocity.x = velocity.x.abs(); // Bounce right
-                bounced = true;
-            } else if transform.translation.x > world_boundary {
-                transform.translation.x = world_boundary;
-                velocity.x = -velocity.x.abs(); // Bounce left
-                bounced = true;
-            }
-            
-            if transform.translation.y < -world_boundary {
-                transform.translation.y = -world_boundary;
-                velocity.y = velocity.y.abs(); // Bounce up
-                bounced = true;
-            } else if transform.translation.y > world_boundary {
-                transform.translation.y = world_boundary;
-                velocity.y = -velocity.y.abs(); // Bounce down
-                bounced = true;
-            }
-            
-            // If bounced, update current direction to match new velocity
-            if bounced {
-                ant.current_direction = velocity.y.atan2(velocity.x);
-            }
-            
-            let new_pos = Vec2::new(transform.translation.x, transform.translation.y);
-            
-            // Track distance traveled for pheromone strength calculations
-            let travel_distance = old_pos.distance(new_pos);
-            
-            if ant.carrying_food {
-                ant.distance_from_food += travel_distance;
-            } else {
-                ant.distance_from_food = 0.0; // Reset when not carrying food
-                ant.distance_from_nest += travel_distance; // Track distance from nest when exploring
-            }
-            
-            // Reset nest distance when near nest (within 50 units)
-            let distance_to_nest = new_pos.distance(Vec2::new(nest_pos.x, nest_pos.y));
-            if distance_to_nest < 50.0 {
-                ant.distance_from_nest = 0.0;
-                
-                // If ant is not carrying food, near nest, and hasn't chosen exit direction yet
-                if !ant.carrying_food && !ant.has_exit_direction {
-                    let mut best_direction = Vec2::ZERO;
-                    let mut max_food_strength = 0.0;
-                    
-                    // Sample in a wider radius around the nest for food pheromones
-                    let sample_radius = 80.0;
-                    let sample_points = 16; // Check 16 directions
-                    
-                    for i in 0..sample_points {
-                        let angle = (i as f32) * std::f32::consts::TAU / sample_points as f32;
-                        let sample_x = new_pos.x + angle.cos() * sample_radius;
-                        let sample_y = new_pos.y + angle.sin() * sample_radius;
-                        
-                        if let Some(idx) = grid.world_to_grid(sample_x, sample_y) {
-                            let food_strength = grid.food_trail[idx];
-                            if food_strength > max_food_strength {
-                                max_food_strength = food_strength;
-                                best_direction = Vec2::new(angle.cos(), angle.sin());
-                            }
-                        }
-                    }
-                    
-                    // If significant food pheromone found, orient toward it
-                    if max_food_strength > config.detection_threshold {
-                        let desired_angle = best_direction.y.atan2(best_direction.x);
-                        velocity.x = desired_angle.cos() * 1.5;
-                        velocity.y = desired_angle.sin() * 1.5;
-                    }
-                    
-                    // Mark that this ant has chosen its exit direction
-                    ant.has_exit_direction = true;
-                }
-            } else {
-                // Reset exit direction flag when ant gets far from nest
-                if distance_to_nest > 80.0 && !ant.carrying_food {
-                    ant.has_exit_direction = false;
-                }
-            }
-            
-            // Bounce off world edges with 180° turn
-            let half_world = config.world_size as f32 * 0.5;
-            
-            if transform.translation.x <= -half_world || transform.translation.x >= half_world {
-                velocity.x = -velocity.x; // Reverse X direction
-            }
-            if transform.translation.y <= -half_world || transform.translation.y >= half_world {
-                velocity.y = -velocity.y; // Reverse Y direction 
-            }
-            
-            // Keep within bounds after bouncing
-            transform.translation.x = transform.translation.x.clamp(-half_world, half_world);
-            transform.translation.y = transform.translation.y.clamp(-half_world, half_world);
-        }
-    }
-}
-
-pub fn performance_analysis_system(
-    ants: Query<&AntState>,
-    mut performance_tracker: ResMut<PerformanceTracker>,
-    mut exit_writer: EventWriter<bevy::app::AppExit>,
+    mut ants: Query<(&mut Transform, &Velocity, &AntState)>,
     time: Res<Time>,
 ) {
-    let mut stuck_count = 0;
-    let mut oscillating_count = 0;
-    let mut lost_count = 0;
-    let mut lost_food_carriers_count = 0;
-    let runtime = time.elapsed_seconds();
+    let delta_time = time.delta_seconds();
     
-    // Clear previous frame's time-since-goal samples
-    performance_tracker.time_since_goal_samples.clear();
-    
-    for ant in ants.iter() {
-        // Count stuck ants (not moving for >3 seconds)
-        if ant.stuck_timer > 3.0 {
-            stuck_count += 1;
+    for (mut transform, velocity, _ant_state) in ants.iter_mut() {
+        transform.translation.x += velocity.x * delta_time;
+        transform.translation.y += velocity.y * delta_time;
+        
+        // Keep ants within world bounds
+        let bound = 480.0;
+        if transform.translation.x > bound {
+            transform.translation.x = bound;
+        } else if transform.translation.x < -bound {
+            transform.translation.x = -bound;
         }
         
-        // Count oscillating ants (>5 direction changes and stuck)
-        if ant.direction_changes > 5 && ant.stuck_timer > 1.0 {
-            oscillating_count += 1;
+        if transform.translation.y > bound {
+            transform.translation.y = bound;
+        } else if transform.translation.y < -bound {
+            transform.translation.y = -bound;
         }
-        
-        // Count lost ants (haven't found food after grace period + 30 seconds)
-        if !ant.has_found_food && ant.startup_timer <= 0.0 && runtime > 45.0 {
-            lost_count += 1;
-        }
-        
-        // Count lost food carriers (carrying food for >30 seconds without delivering)
-        if ant.carrying_food && ant.food_carry_start_time > 0.0 && 
-           runtime - ant.food_carry_start_time > 30.0 {
-            lost_food_carriers_count += 1;
-        }
-        
-        // Calculate time since last goal achievement for each ant
-        let time_since_goal = if ant.last_goal_achievement_time > 0.0 {
-            runtime - ant.last_goal_achievement_time
-        } else {
-            // If ant has never achieved a goal, use time since spawn minus grace period
-            (runtime - ant.startup_timer).max(0.0)
-        };
-        
-        // Only include ants that have had reasonable time to achieve goals (after startup period)
-        if ant.startup_timer <= 0.0 {
-            performance_tracker.time_since_goal_samples.push(time_since_goal);
-        }
-    }
-    
-    performance_tracker.stuck_ants_count = stuck_count;
-    performance_tracker.oscillating_ants_count = oscillating_count;
-    performance_tracker.lost_ants_count = lost_count;
-    performance_tracker.lost_food_carriers_count = lost_food_carriers_count;
-    
-    // Calculate average time since goal achievement
-    performance_tracker.average_time_since_goal = if !performance_tracker.time_since_goal_samples.is_empty() {
-        performance_tracker.time_since_goal_samples.iter().sum::<f32>() / performance_tracker.time_since_goal_samples.len() as f32
-    } else {
-        0.0
-    };
-    
-    // Initialize simulation start time on first run
-    if performance_tracker.simulation_start_time == 0.0 {
-        performance_tracker.simulation_start_time = time.elapsed_seconds();
-    }
-    
-    // AUTO-EXIT when oscillating ants hits 20 for optimization testing
-    if oscillating_count >= 20 {
-        println!("\n🚨 AUTO-EXIT: Too many oscillating ants ({}) - optimization needed!", oscillating_count);
-        println!("📊 Final Stats:");
-        println!("   Deliveries: {}", performance_tracker.successful_deliveries);
-        println!("   Deliveries/min: {:.2}", performance_tracker.deliveries_per_minute);
-        println!("   Avg delivery time: {:.1}s", performance_tracker.average_delivery_time);
-        println!("   Avg return time: {:.1}s", performance_tracker.average_return_time);
-        println!("   ⭐ Avg time since goal: {:.1}s", performance_tracker.average_time_since_goal);
-        println!("   Stuck ants: {}", performance_tracker.stuck_ants_count);
-        println!("   Lost ants: {}", performance_tracker.lost_ants_count);
-        println!("   Lost food carriers: {}", performance_tracker.lost_food_carriers_count);
-        println!("   Runtime: {:.1}s", time.elapsed_seconds());
-        exit_writer.send(AppExit::Success);
-    }
-    
-    // AUTO-EXIT when too many food carriers get lost 
-    if lost_food_carriers_count >= 10 {
-        println!("\n🚨 AUTO-EXIT: Too many lost food carriers ({}) - nest homing broken!", lost_food_carriers_count);
-        println!("📊 Final Stats:");
-        println!("   Deliveries: {}", performance_tracker.successful_deliveries);
-        println!("   Deliveries/min: {:.2}", performance_tracker.deliveries_per_minute);
-        println!("   Avg delivery time: {:.1}s", performance_tracker.average_delivery_time);
-        println!("   Avg return time: {:.1}s", performance_tracker.average_return_time);
-        println!("   ⭐ Avg time since goal: {:.1}s", performance_tracker.average_time_since_goal);
-        println!("   Stuck ants: {}", performance_tracker.stuck_ants_count);
-        println!("   Lost ants: {}", performance_tracker.lost_ants_count);
-        println!("   Lost food carriers: {}", performance_tracker.lost_food_carriers_count);
-        println!("   Runtime: {:.1}s", time.elapsed_seconds());
-        exit_writer.send(AppExit::Success);
-    }
-    
-    // Also auto-exit after 5 minutes if we achieve the goal
-    if time.elapsed_seconds() > 300.0 && performance_tracker.deliveries_per_minute >= 10.0 {
-        println!("\n🎉 SUCCESS: 5 minutes completed with {:.2} deliveries/min!", performance_tracker.deliveries_per_minute);
-        exit_writer.send(AppExit::Success);
     }
 }
 
@@ -797,8 +122,8 @@ pub fn pheromone_deposit_system(
             let pos = transform.translation;
             
             if ant.carrying_food {
-                // Lay food trail when returning to nest - decreases with distance from food
-                let decay_factor = (-ant.distance_from_food * 0.005).exp(); // Exponential decay
+                // Lay food trail when returning to nest
+                let decay_factor = (-ant.distance_from_food * 0.005).exp();
                 let deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
                 
                 grid.deposit(
@@ -809,8 +134,8 @@ pub fn pheromone_deposit_system(
                 );
                 
             } else {
-                // Lay nest trail when exploring - decreases with distance from nest
-                let decay_factor = (-ant.distance_from_nest * 0.003).exp(); // Exponential decay
+                // Lay nest trail when exploring
+                let decay_factor = (-ant.distance_from_nest * 0.003).exp();
                 let deposit_amount = config.lay_rate_nest * decay_factor;
                 
                 grid.deposit(
@@ -843,11 +168,10 @@ pub fn food_collection_system(
     mut performance_tracker: ResMut<PerformanceTracker>,
     time: Res<Time>,
 ) {
-    // Find nest position first
     let nest_pos = if let Ok(nest_transform) = nests.get_single() {
         nest_transform.translation
     } else {
-        Vec3::ZERO // Default to origin if no nest found
+        Vec3::ZERO
     };
     
     for (ant_transform, mut ant, mut velocity) in ants.iter_mut() {
@@ -860,43 +184,41 @@ pub fn food_collection_system(
                 let distance = ant_pos.distance(food_pos);
                 
                 if distance < 25.0 && food.amount > 0.0 {
-                    // Start collecting food - stop moving
-                    ant.food_collection_timer = 0.3; // OPTIMIZATION 4: Faster food collection
+                    // Start collecting food
+                    ant.food_collection_timer = 0.3;
                     velocity.x = 0.0;
                     velocity.y = 0.0;
                     break;
                 }
             }
         } else if ant.food_collection_timer > 0.0 {
-            // Currently collecting food - stay still
-            ant.food_collection_timer -= 0.016; // Rough delta time
+            // Currently collecting food
+            ant.food_collection_timer -= time.delta_seconds();
             velocity.x = 0.0;
             velocity.y = 0.0;
             
-            // Check if collection is complete
             if ant.food_collection_timer <= 0.0 {
-                // Look for nearby food to actually take
+                // Look for nearby food to take
                 for (food_transform, mut food) in food_sources.iter_mut() {
                     let food_pos = food_transform.translation;
                     let distance = ant_pos.distance(food_pos);
                     
                     if distance < 25.0 && food.amount > 0.0 {
-                        let take_amount = 1.0; // Take exactly 1 bite
+                        let take_amount = 1.0;
                         food.amount -= take_amount;
                         ant.carrying_food = true;
-                        ant.food_pickup_time = time.elapsed_seconds(); // Track pickup time
-                        ant.has_found_food = true; // Mark that this ant has found food
-                        ant.food_carry_start_time = time.elapsed_seconds(); // Track when started carrying for return time
-                        ant.last_goal_achievement_time = time.elapsed_seconds(); // GOAL ACHIEVEMENT: Found food!
+                        ant.food_pickup_time = time.elapsed_seconds();
+                        ant.has_found_food = true;
+                        ant.food_carry_start_time = time.elapsed_seconds();
+                        ant.last_goal_achievement_time = time.elapsed_seconds();
                         performance_tracker.total_food_collected += take_amount;
                         
-                        // Orient toward nest immediately after picking up food
+                        // Head toward nest
                         let direction = nest_pos - ant_pos;
-                        let distance_to_nest = direction.length();
-                        if distance_to_nest > 0.0 {
-                            let normalized_direction = direction / distance_to_nest;
-                            velocity.x = normalized_direction.x * 2.0; // OPTIMIZATION 1: Faster nest homing
-                            velocity.y = normalized_direction.y * 2.0;
+                        if direction.length() > 0.0 {
+                            let normalized = direction.normalize();
+                            velocity.x = normalized.x * 90.0;
+                            velocity.y = normalized.y * 90.0;
                         }
                         break;
                     }
@@ -906,29 +228,25 @@ pub fn food_collection_system(
             // Look for nest to drop off food
             let distance = ant_pos.distance(nest_pos);
             
-            if distance < 40.0 { // Match nest visual radius
-                // SUCCESSFUL DELIVERY - Track performance!
+            if distance < 40.0 {
+                // Successful delivery
                 ant.carrying_food = false;
                 ant.delivery_attempts += 1;
                 ant.successful_deliveries += 1;
-                ant.last_goal_achievement_time = time.elapsed_seconds(); // GOAL ACHIEVEMENT: Delivered food!
+                ant.last_goal_achievement_time = time.elapsed_seconds();
                 
-                // Track delivery time (total cycle time)
+                // Track delivery metrics
                 let delivery_time = time.elapsed_seconds() - ant.food_pickup_time;
-                performance_tracker.delivery_times.push(delivery_time);
-                
-                // Track return time (just the carrying phase)
                 let return_time = time.elapsed_seconds() - ant.food_carry_start_time;
+                performance_tracker.delivery_times.push(delivery_time);
                 performance_tracker.return_times.push(return_time);
-                
                 performance_tracker.successful_deliveries += 1;
                 performance_tracker.last_delivery_time = time.elapsed_seconds();
                 
-                // Update average delivery time
+                // Update averages
                 let total_time: f32 = performance_tracker.delivery_times.iter().sum();
                 performance_tracker.average_delivery_time = total_time / performance_tracker.delivery_times.len() as f32;
                 
-                // Update average return time
                 let total_return_time: f32 = performance_tracker.return_times.iter().sum();
                 performance_tracker.average_return_time = total_return_time / performance_tracker.return_times.len() as f32;
                 
@@ -936,15 +254,93 @@ pub fn food_collection_system(
                 let elapsed_minutes = time.elapsed_seconds() / 60.0;
                 performance_tracker.deliveries_per_minute = performance_tracker.successful_deliveries as f32 / elapsed_minutes.max(0.1);
                 
-                // Give random direction after dropping off food
-                let angle = rand::random::<f32>() * std::f32::consts::TAU;
-                velocity.x = angle.cos() * 1.5;
-                velocity.y = angle.sin() * 1.5;
+                // Start exploring again
+                ant.behavior_state = AntBehaviorState::Exploring;
+                ant.sensing_timer = 0.3;
+                ant.current_direction = rand::random::<f32>() * std::f32::consts::TAU;
+                velocity.x = ant.current_direction.cos() * 85.0;
+                velocity.y = ant.current_direction.sin() * 85.0;
             }
         }
     }
 }
 
+pub fn performance_analysis_system(
+    ants: Query<&AntState>,
+    mut performance_tracker: ResMut<PerformanceTracker>,
+    mut exit_writer: EventWriter<bevy::app::AppExit>,
+    time: Res<Time>,
+) {
+    let mut stuck_count = 0;
+    let mut oscillating_count = 0;
+    let mut lost_count = 0;
+    let mut lost_food_carriers_count = 0;
+    let runtime = time.elapsed_seconds();
+    
+    performance_tracker.time_since_goal_samples.clear();
+    
+    for ant in ants.iter() {
+        if ant.stuck_timer > 3.0 {
+            stuck_count += 1;
+        }
+        
+        if ant.direction_changes > 5 && ant.stuck_timer > 1.0 {
+            oscillating_count += 1;
+        }
+        
+        if !ant.has_found_food && ant.startup_timer <= 0.0 && runtime > 45.0 {
+            lost_count += 1;
+        }
+        
+        if ant.carrying_food && ant.food_carry_start_time > 0.0 && 
+           runtime - ant.food_carry_start_time > 30.0 {
+            lost_food_carriers_count += 1;
+        }
+        
+        let time_since_goal = if ant.last_goal_achievement_time > 0.0 {
+            runtime - ant.last_goal_achievement_time
+        } else {
+            (runtime - ant.startup_timer).max(0.0)
+        };
+        
+        if ant.startup_timer <= 0.0 {
+            performance_tracker.time_since_goal_samples.push(time_since_goal);
+        }
+    }
+    
+    performance_tracker.stuck_ants_count = stuck_count;
+    performance_tracker.oscillating_ants_count = oscillating_count;
+    performance_tracker.lost_ants_count = lost_count;
+    performance_tracker.lost_food_carriers_count = lost_food_carriers_count;
+    
+    performance_tracker.average_time_since_goal = if !performance_tracker.time_since_goal_samples.is_empty() {
+        performance_tracker.time_since_goal_samples.iter().sum::<f32>() / performance_tracker.time_since_goal_samples.len() as f32
+    } else {
+        0.0
+    };
+    
+    if performance_tracker.simulation_start_time == 0.0 {
+        performance_tracker.simulation_start_time = time.elapsed_seconds();
+    }
+    
+    // Auto-exit conditions
+    if oscillating_count >= 20 {
+        println!("\n🚨 AUTO-EXIT: Too many oscillating ants ({})", oscillating_count);
+        exit_writer.send(AppExit::Success);
+    }
+    
+    if lost_food_carriers_count >= 10 {
+        println!("\n🚨 AUTO-EXIT: Too many lost food carriers ({})", lost_food_carriers_count);
+        exit_writer.send(AppExit::Success);
+    }
+    
+    if time.elapsed_seconds() > 300.0 && performance_tracker.deliveries_per_minute >= 10.0 {
+        println!("\n🎉 SUCCESS: 5 minutes completed with {:.2} deliveries/min!", performance_tracker.deliveries_per_minute);
+        exit_writer.send(AppExit::Success);
+    }
+}
+
+// Visual and UI systems remain unchanged
 pub fn ant_visual_system(
     mut ants: Query<(&AntState, &mut Sprite), (With<AntState>, Without<PheromoneVisualization>)>,
     color_config: Res<ColorConfig>,
@@ -968,7 +364,6 @@ pub fn food_visual_system(
 ) {
     for (entity, food, mut sprite, _transform) in food_sources.iter_mut() {
         if food.amount > 0.0 {
-            // Make food dimmer as it's consumed (30% to 100% brightness)
             let intensity = (food.amount / food.max_amount).clamp(0.3, 1.0);
             let base_color = color_config.food_source;
             sprite.color = Color::srgba(
@@ -981,12 +376,10 @@ pub fn food_visual_system(
             // Despawn depleted food and spawn new one
             commands.entity(entity).despawn();
             
-            // Spawn replacement food at random location
             let range = config.world_size as f32 * 0.4;
             let mut x = (rand::random::<f32>() - 0.5) * range;
             let mut y = (rand::random::<f32>() - 0.5) * range;
             
-            // Ensure minimum distance of 150 units from nest (0,0)
             let dist_from_nest = (x * x + y * y).sqrt();
             if dist_from_nest < 150.0 {
                 let scale = 150.0 / dist_from_nest;
@@ -1015,7 +408,6 @@ pub fn exit_system(
     mut exit: EventWriter<AppExit>,
 ) {
     if input.just_pressed(KeyCode::Escape) {
-        println!("Exit reason: User pressed ESC key");
         exit.send(AppExit::Success);
     }
 }
@@ -1036,11 +428,9 @@ pub fn window_close_system(
     mut exit: EventWriter<AppExit>,
 ) {
     for _event in close_events.read() {
-        println!("Exit reason: User closed window via X button");
         exit.send(AppExit::Success);
     }
 }
-
 
 pub fn restart_system(
     input: Res<ButtonInput<KeyCode>>,
@@ -1076,7 +466,7 @@ pub fn restart_system(
         commands.spawn((
             SpriteBundle {
                 sprite: Sprite {
-                    color: Color::srgb(1.0, 1.0, 0.0), // Bright yellow for nest
+                    color: Color::srgb(1.0, 1.0, 0.0),
                     custom_size: Some(Vec2::new(80.0, 80.0)),
                     ..default()
                 },
@@ -1095,7 +485,7 @@ pub fn restart_system(
             commands.spawn((
                 SpriteBundle {
                     sprite: Sprite {
-                        color: Color::srgb(1.0, 0.0, 0.0), // Bright red for ants
+                        color: Color::srgb(1.0, 0.0, 0.0),
                         custom_size: Some(Vec2::new(12.0, 12.0)),
                         ..default()
                     },
@@ -1123,16 +513,16 @@ pub fn restart_system(
                     trail_memory: [rand::random::<f32>() * std::f32::consts::TAU; 5],
                     memory_index: 0,
                     trail_quality: 0.0,
-                    hysteresis_threshold: 0.0005, // Default detection threshold
+                    hysteresis_threshold: 0.0005,
                     consecutive_good_trail_time: 0.0,
                     food_pickup_time: 0.0,
                     delivery_attempts: 0,
                     successful_deliveries: 0,
-                    startup_timer: 5.0, // OPTIMIZATION 4: Further reduced to 5s for even faster food seeking
-                    has_found_food: false, // Track if ant has ever found food
-                    food_carry_start_time: 0.0, // When ant picked up food
-                    last_goal_achievement_time: 0.0, // Initialize as never achieved a goal
-                    current_goal_start_time: 0.0, // Will be set when startup timer expires
+                    startup_timer: 3.0,
+                    has_found_food: false,
+                    food_carry_start_time: 0.0,
+                    last_goal_achievement_time: 0.0,
+                    current_goal_start_time: 0.0,
                 },
                 Velocity {
                     x: (rand::random::<f32>() * 2.0 - 1.0) * 1.5,
@@ -1144,20 +534,18 @@ pub fn restart_system(
         // Respawn food sources
         for i in 0..config.food_sources {
             let (x, y) = if i < config.food_sources / 2 {
-                // Close food sources (within 200 units of nest)
                 let angle = rand::random::<f32>() * std::f32::consts::TAU;
-                let distance = 80.0 + rand::random::<f32>() * 120.0; // 80-200 units away
+                let distance = 80.0 + rand::random::<f32>() * 120.0;
                 (angle.cos() * distance, angle.sin() * distance)
             } else {
-                // Far food sources (scattered across world)
-                let range = (config.world_size as f32) * 0.3; // Smaller range than before
+                let range = (config.world_size as f32) * 0.3;
                 ((rand::random::<f32>() - 0.5) * range, (rand::random::<f32>() - 0.5) * range)
             };
             
             commands.spawn((
                 SpriteBundle {
                     sprite: Sprite {
-                        color: Color::srgb(0.0, 1.0, 0.0), // Bright green for food
+                        color: Color::srgb(0.0, 1.0, 0.0),
                         custom_size: Some(Vec2::new(30.0, 30.0)),
                         ..default()
                     },
@@ -1208,7 +596,6 @@ pub fn camera_control_system(
         let mut camera_move = Vec3::ZERO;
         let camera_speed = 200.0;
         
-        // WASD movement
         if input.pressed(KeyCode::KeyW) {
             camera_move.y += camera_speed;
         }
@@ -1222,9 +609,8 @@ pub fn camera_control_system(
             camera_move.x += camera_speed;
         }
         
-        camera_transform.translation += camera_move * 0.016; // rough delta time
+        camera_transform.translation += camera_move * 0.016;
         
-        // Mouse wheel zoom
         for event in scroll_events.read() {
             let zoom_factor = if event.y > 0.0 { 0.9 } else { 1.1 };
             camera_transform.scale *= zoom_factor;
@@ -1237,8 +623,8 @@ pub fn setup_pheromone_visualization(
     mut commands: Commands,
     _config: Res<SimConfig>,
 ) {
-    let grid_size = 200; // Higher resolution for 1000x1000 world
-    let cell_size = 5.0; // Each cell covers 5x5 world units
+    let grid_size = 200;
+    let cell_size = 5.0;
     
     for x in 0..grid_size {
         for y in 0..grid_size {
@@ -1248,11 +634,11 @@ pub fn setup_pheromone_visualization(
             commands.spawn((
                 SpriteBundle {
                     sprite: Sprite {
-                        color: Color::srgba(0.0, 0.0, 0.0, 0.0), // Transparent initially
+                        color: Color::srgba(0.0, 0.0, 0.0, 0.0),
                         custom_size: Some(Vec2::new(cell_size, cell_size)),
                         ..default()
                     },
-                    transform: Transform::from_xyz(world_x, world_y, -10.0), // Far behind everything
+                    transform: Transform::from_xyz(world_x, world_y, -10.0),
                     ..default()
                 },
                 PheromoneVisualization {
@@ -1271,24 +657,16 @@ pub fn update_pheromone_visualization(
 ) {
     if let Some(grid) = pheromone_grid {
         for (mut sprite, mut transform) in pheromone_sprites.iter_mut() {
-            // Use the exact world position of the visualization sprite
             let world_x = transform.translation.x;
             let world_y = transform.translation.y;
             
-            // Sample the pheromone grid directly at this position
             if let Some(idx) = grid.world_to_grid(world_x, world_y) {
                 let food_strength = grid.food_trail[idx];
                 let nest_strength = grid.nest_trail[idx];
                 let max_strength = food_strength.max(nest_strength);
                 
-                // Debug: Disabled to reduce console spam during optimization tests
-                // if idx % 50000 == 0 && max_strength > 5.0 {
-                //     println!("Pheromone at {},{}: food={:.2}, nest={:.2}", world_x, world_y, food_strength, nest_strength);
-                // }
-                
                 if max_strength > 0.01 {
                     if food_strength > nest_strength {
-                        // Food trails - use more aggressive logarithmic scaling
                         let intensity = (food_strength.ln() / 3.0).clamp(0.0, 1.0);
                         let base_color = color_config.food_pheromone;
                         sprite.color = Color::srgba(
@@ -1297,9 +675,8 @@ pub fn update_pheromone_visualization(
                             base_color.to_srgba().blue,
                             intensity
                         );
-                        transform.translation.z = -9.0; // Food pheromones above nest pheromones
+                        transform.translation.z = -9.0;
                     } else {
-                        // Nest trails - use more aggressive logarithmic scaling
                         let intensity = (nest_strength.ln() / 3.0).clamp(0.0, 1.0);
                         let base_color = color_config.nest_pheromone;
                         sprite.color = Color::srgba(
@@ -1308,11 +685,11 @@ pub fn update_pheromone_visualization(
                             base_color.to_srgba().blue,
                             intensity
                         );
-                        transform.translation.z = -10.0; // Nest pheromones below food pheromones
+                        transform.translation.z = -10.0;
                     }
                 } else {
                     sprite.color = Color::srgba(0.0, 0.0, 0.0, 0.0);
-                    transform.translation.z = -10.0; // Default Z-level
+                    transform.translation.z = -10.0;
                 }
             } else {
                 sprite.color = Color::srgba(0.0, 0.0, 0.0, 0.0);
@@ -1322,7 +699,6 @@ pub fn update_pheromone_visualization(
 }
 
 pub fn setup_debug_ui(mut commands: Commands, color_config: Res<ColorConfig>) {
-    // Pheromone debug text in lower left
     commands.spawn((
         TextBundle::from_section(
             "Pheromone Info",
@@ -1340,7 +716,6 @@ pub fn setup_debug_ui(mut commands: Commands, color_config: Res<ColorConfig>) {
         PheromoneDebugText,
     ));
 
-    // Entity debug text on right side
     commands.spawn((
         TextBundle::from_section(
             "Entity Info",
@@ -1359,13 +734,12 @@ pub fn setup_debug_ui(mut commands: Commands, color_config: Res<ColorConfig>) {
         EntityDebugText,
     ));
 
-    // Performance metrics in top right
     commands.spawn((
         TextBundle::from_section(
             "Performance Metrics",
             TextStyle {
                 font_size: 18.0,
-                color: Color::srgb(0.0, 1.0, 0.0), // Bright green
+                color: Color::srgb(0.0, 1.0, 0.0),
                 ..default()
             },
         ).with_style(Style {
@@ -1386,7 +760,6 @@ pub fn cursor_tracking_system(
 ) {
     if let (Ok(window), Ok((camera, camera_transform))) = (window_query.get_single(), camera_query.get_single()) {
         if let Some(cursor_position) = window.cursor_position() {
-            // Convert screen coordinates to world coordinates
             if let Some(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_position) {
                 debug_info.cursor_world_pos = world_pos;
             }
@@ -1403,7 +776,6 @@ pub fn hover_detection_system(
 ) {
     let cursor_pos = debug_info.cursor_world_pos;
     
-    // Update pheromone info
     if let Some(grid) = pheromone_grid.as_deref() {
         if let Some(idx) = grid.world_to_grid(cursor_pos.x, cursor_pos.y) {
             let food_strength = grid.food_trail[idx];
@@ -1417,52 +789,33 @@ pub fn hover_detection_system(
         }
     }
     
-    // Reset hovered entity
     debug_info.hovered_entity = None;
     debug_info.entity_info = String::new();
     
     // Check for hovered ants
     for (entity, transform, ant_state, velocity) in ant_query.iter() {
         let distance = cursor_pos.distance(transform.translation.truncate());
-        if distance < 15.0 { // Within 15 units of ant
+        if distance < 15.0 {
             debug_info.hovered_entity = Some(entity);
             debug_info.entity_info = format!(
-                "=== SUPER INTELLIGENT ANT ===\nEntity: {:?}\nPos: ({:.1}, {:.1})\nBehavior: {:?}\nCarrying Food: {}\n\n--- INTELLIGENCE SYSTEMS ---\nTrail Quality: {:.3}\nHysteresis Threshold: {:.4}\nConsecutive Good Trail: {:.2}s\nMemory Direction: {:.1}°\n\n--- SENSING DATA ---\nLast Pheromone: {:.3}\nTrail Strength: {:.3}\nSensing Timer: {:.2}\nMomentum Timer: {:.2}\nDirection: {:.2}°\nStuck Timer: {:.2}s\nDir Changes: {}\nDistance Moved: {:.1}\n\n--- 8-DIRECTION SCAN ---\n  N:{:.3} NE:{:.3} E:{:.3} SE:{:.3}\n  S:{:.3} SW:{:.3} W:{:.3} NW:{:.3}\n\n--- LEGACY DATA ---\nHunger: {:.3}\nSensitivity: {:.3}\nCollection Timer: {:.3}\nDistance from Food: {:.1}\nDistance from Nest: {:.1}\nHas Exit Direction: {}\nVelocity: ({:.2}, {:.2})",
+                "=== BASIC ANT ===\nEntity: {:?}\nPos: ({:.1}, {:.1})\nBehavior: {:?}\nCarrying Food: {}\nDirection: {:.1}°\nVelocity: ({:.2}, {:.2})\nSensing Timer: {:.2}\nStuck Timer: {:.2}",
                 entity,
                 transform.translation.x, transform.translation.y,
                 ant_state.behavior_state,
                 ant_state.carrying_food,
-                ant_state.trail_quality,
-                ant_state.hysteresis_threshold,
-                ant_state.consecutive_good_trail_time,
-                calculate_memory_direction(&ant_state.trail_memory).to_degrees(),
-                ant_state.last_pheromone_strength,
-                ant_state.trail_strength,
-                ant_state.sensing_timer,
-                ant_state.momentum_timer,
                 ant_state.current_direction.to_degrees(),
-                ant_state.stuck_timer,
-                ant_state.direction_changes,
-                transform.translation.truncate().distance(ant_state.last_position),
-                ant_state.last_sensing_result[0], ant_state.last_sensing_result[1], ant_state.last_sensing_result[2], ant_state.last_sensing_result[3],
-                ant_state.last_sensing_result[4], ant_state.last_sensing_result[5], ant_state.last_sensing_result[6], ant_state.last_sensing_result[7],
-                ant_state.hunger,
-                ant_state.sensitivity_adapt,
-                ant_state.food_collection_timer,
-                ant_state.distance_from_food,
-                ant_state.distance_from_nest,
-                ant_state.has_exit_direction,
-                velocity.x, velocity.y
+                velocity.x, velocity.y,
+                ant_state.sensing_timer,
+                ant_state.stuck_timer
             );
             break;
         }
     }
     
-    // Check for hovered nest (if no ant was hovered)
     if debug_info.hovered_entity.is_none() {
         for (entity, transform, nest) in nest_query.iter() {
             let distance = cursor_pos.distance(transform.translation.truncate());
-            if distance < 50.0 { // Within 50 units of nest center
+            if distance < 50.0 {
                 debug_info.hovered_entity = Some(entity);
                 debug_info.entity_info = format!(
                     "=== NEST ===\nEntity: {:?}\nPos: ({:.1}, {:.1})\nCapacity: {:.1}",
@@ -1475,11 +828,10 @@ pub fn hover_detection_system(
         }
     }
     
-    // Check for hovered food (if no ant or nest was hovered)
     if debug_info.hovered_entity.is_none() {
         for (entity, transform, food) in food_query.iter() {
             let distance = cursor_pos.distance(transform.translation.truncate());
-            if distance < 20.0 { // Within 20 units of food
+            if distance < 20.0 {
                 debug_info.hovered_entity = Some(entity);
                 debug_info.entity_info = format!(
                     "=== FOOD ===\nEntity: {:?}\nPos: ({:.1}, {:.1})\nAmount: {:.1}\nMax Amount: {:.1}\nRemaining: {:.1}%",
@@ -1502,20 +854,17 @@ pub fn update_debug_ui(
     mut entity_text_query: Query<&mut Text, (With<EntityDebugText>, Without<PheromoneDebugText>, Without<PerformanceText>)>,
     mut performance_text_query: Query<&mut Text, (With<PerformanceText>, Without<PheromoneDebugText>, Without<EntityDebugText>)>,
 ) {
-    // Update pheromone debug text
     if let Ok(mut text) = pheromone_text_query.get_single_mut() {
         text.sections[0].value = debug_info.pheromone_info.clone();
     }
     
-    // Update entity debug text
     if let Ok(mut text) = entity_text_query.get_single_mut() {
         text.sections[0].value = debug_info.entity_info.clone();
     }
     
-    // Update performance metrics
     if let Ok(mut text) = performance_text_query.get_single_mut() {
         text.sections[0].value = format!(
-            "🎯 PERFORMANCE METRICS 🎯\n\n✅ Successful Deliveries: {}\n❌ Failed Attempts: {}\n📦 Total Food Collected: {:.1}\n⏱️ Avg Delivery Time: {:.1}s\n🏠 Avg Return Time: {:.1}s\n📈 Deliveries/Min: {:.2}\n\n🚫 Stuck Ants: {}\n🔄 Oscillating Ants: {}\n🔍 Lost Ants: {}\n🍯 Lost Food Carriers: {}\n\n🔧 OPTIMIZATION TARGET:\nMaximize: Deliveries/Min\nMinimize: Return Time + Lost Carriers",
+            "🎯 PERFORMANCE METRICS 🎯\n\n✅ Successful Deliveries: {}\n❌ Failed Attempts: {}\n📦 Total Food Collected: {:.1}\n⏱️ Avg Delivery Time: {:.1}s\n🏠 Avg Return Time: {:.1}s\n📈 Deliveries/Min: {:.2}\n\n🚫 Stuck Ants: {}\n🔄 Oscillating Ants: {}\n🔍 Lost Ants: {}\n🍯 Lost Food Carriers: {}",
             performance_tracker.successful_deliveries,
             performance_tracker.failed_attempts,
             performance_tracker.total_food_collected,
@@ -1538,17 +887,13 @@ pub fn ant_selection_system(
     selected_query: Query<Entity, With<SelectedAnt>>,
 ) {
     if mouse_input.just_pressed(MouseButton::Left) {
-        let _cursor_pos = debug_info.cursor_world_pos;
         let mut ant_clicked = false;
         
-        // Remove selection from all ants
         for entity in selected_query.iter() {
             commands.entity(entity).remove::<SelectedAnt>();
         }
         
-        // Check if we clicked on an ant
         for entity in ant_query.iter() {
-            // Use the hovered entity if available (we're clicking on what we're hovering)
             if debug_info.hovered_entity == Some(entity) {
                 commands.entity(entity).insert(SelectedAnt);
                 debug_info.selected_entity = Some(entity);
@@ -1557,7 +902,6 @@ pub fn ant_selection_system(
             }
         }
         
-        // If we didn't click on an ant, deselect
         if !ant_clicked {
             debug_info.selected_entity = None;
         }
@@ -1570,35 +914,17 @@ pub fn selected_ant_display_system(
 ) {
     if let Some(selected_entity) = debug_info.selected_entity {
         if let Ok((entity, transform, ant_state, velocity)) = ant_query.get(selected_entity) {
-            // Only update if we're not showing hover info (hover takes priority)
             if debug_info.entity_info.is_empty() {
                 debug_info.entity_info = format!(
-                    "=== SUPER INTELLIGENT ANT ===\nEntity: {:?}\nPos: ({:.1}, {:.1})\nBehavior: {:?}\nCarrying Food: {}\n\n--- INTELLIGENCE SYSTEMS ---\nTrail Quality: {:.3}\nHysteresis Threshold: {:.4}\nConsecutive Good Trail: {:.2}s\nMemory Direction: {:.1}°\n\n--- SENSING DATA ---\nLast Pheromone: {:.3}\nTrail Strength: {:.3}\nSensing Timer: {:.2}\nMomentum Timer: {:.2}\nDirection: {:.2}°\nStuck Timer: {:.2}s\nDir Changes: {}\nDistance Moved: {:.1}\n\n--- 8-DIRECTION SCAN ---\n  N:{:.3} NE:{:.3} E:{:.3} SE:{:.3}\n  S:{:.3} SW:{:.3} W:{:.3} NW:{:.3}\n\n--- LEGACY DATA ---\nHunger: {:.3}\nSensitivity: {:.3}\nCollection Timer: {:.3}\nDistance from Food: {:.1}\nDistance from Nest: {:.1}\nHas Exit Direction: {}\nVelocity: ({:.2}, {:.2})",
+                    "=== BASIC ANT ===\nEntity: {:?}\nPos: ({:.1}, {:.1})\nBehavior: {:?}\nCarrying Food: {}\nDirection: {:.1}°\nVelocity: ({:.2}, {:.2})\nSensing Timer: {:.2}\nStuck Timer: {:.2}",
                     entity,
                     transform.translation.x, transform.translation.y,
                     ant_state.behavior_state,
                     ant_state.carrying_food,
-                    ant_state.trail_quality,
-                    ant_state.hysteresis_threshold,
-                    ant_state.consecutive_good_trail_time,
-                    calculate_memory_direction(&ant_state.trail_memory).to_degrees(),
-                    ant_state.last_pheromone_strength,
-                    ant_state.trail_strength,
-                    ant_state.sensing_timer,
-                    ant_state.momentum_timer,
                     ant_state.current_direction.to_degrees(),
-                    ant_state.stuck_timer,
-                    ant_state.direction_changes,
-                    transform.translation.truncate().distance(ant_state.last_position),
-                    ant_state.last_sensing_result[0], ant_state.last_sensing_result[1], ant_state.last_sensing_result[2], ant_state.last_sensing_result[3],
-                    ant_state.last_sensing_result[4], ant_state.last_sensing_result[5], ant_state.last_sensing_result[6], ant_state.last_sensing_result[7],
-                    ant_state.hunger,
-                    ant_state.sensitivity_adapt,
-                    ant_state.food_collection_timer,
-                    ant_state.distance_from_food,
-                    ant_state.distance_from_nest,
-                    ant_state.has_exit_direction,
-                    velocity.x, velocity.y
+                    velocity.x, velocity.y,
+                    ant_state.sensing_timer,
+                    ant_state.stuck_timer
                 );
             }
         }
@@ -1611,24 +937,22 @@ pub fn selected_ant_outline_system(
     existing_outlines: Query<Entity, With<crate::components::AntOutline>>,
     color_config: Res<ColorConfig>,
 ) {
-    // Remove existing outlines
     for outline_entity in existing_outlines.iter() {
         commands.entity(outline_entity).despawn();
     }
     
-    // Add outlines for selected ants
     for (_ant_entity, transform) in selected_ants.iter() {
         commands.spawn((
             SpriteBundle {
                 sprite: Sprite {
                     color: color_config.debug_selection,
-                    custom_size: Some(Vec2::new(14.0, 14.0)), // Slightly larger than ant (12x12)
+                    custom_size: Some(Vec2::new(14.0, 14.0)),
                     ..default()
                 },
                 transform: Transform::from_xyz(
                     transform.translation.x,
                     transform.translation.y,
-                    transform.translation.z - 0.1 // Just behind the ant
+                    transform.translation.z - 0.1
                 ),
                 ..default()
             },

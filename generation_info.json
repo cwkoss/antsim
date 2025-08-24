@@ -1,36 +1,51 @@
 {
-  "current_generation": 4,
-  "description": "Complete text rendering overhaul with emoji fixes and overflow prevention",
-  "timestamp": "2025-08-24T20:03:43Z",
-  "video_filename": "0004_text_fixes_emoji_linebreaks.mp4",
+  "current_generation": 5,
+  "description": "Failed optimization attempt - aggressive changes broke ant behavior system",
+  "timestamp": "2025-08-24T21:00:00Z",
+  "video_filename": "generation_5_failed_optimization.mp4",
   "performance_metrics": {
-    "deliveries_per_minute": 18.8,
-    "average_return_time_seconds": 14.6,
+    "deliveries_per_minute": 0.4,
+    "average_return_time_seconds": 9.7,
     "average_time_since_goal_seconds": null,
-    "simulation_duration_seconds": 305,
-    "target_frames": 508,
-    "frames_captured": 3049
+    "simulation_duration_seconds": 300,
+    "target_frames": 500,
+    "frames_captured": 1,
+    "baseline_performance": 18.8,
+    "performance_degradation": "97.9%"
   },
-  "key_changes": [
-    "Fixed emoji display issues - replaced problematic emoji characters with ASCII alternatives",
-    "Added line breaks to prevent text overflow on right side of video overlay",
-    "Updated video overlay to display averageTimeSinceGoal as primary metric",
-    "Reorganized text layout with pipe separators for better readability",
-    "Split long status lines into separate display lines to prevent truncation",
-    "Expanded text overlay area from 80 to 85 pixels to accommodate additional lines"
+  "attempted_optimizations": [
+    "Round 1: Enhanced pheromone trail following sensitivity with gradient calculations",
+    "Round 2: Improved stuck detection and recovery with 3-level intervention system", 
+    "Round 3: Better exploration vs exploitation balance with pheromone awareness",
+    "Round 4: Enhanced goal state transitions with immediate nest orientation",
+    "Round 5: Optimized movement and pathfinding with quality-based speed adjustments"
   ],
-  "technical_improvements": [
-    "Complete emoji-free text rendering system using ASCII characters only",
-    "Multi-line text layout with proper overflow handling",
-    "Improved metrics display priority with averageTimeSinceGoal featured first",
-    "Better text spacing and visual organization in video overlays",
-    "Enhanced text readability with pipe-separated format"
+  "failure_analysis": [
+    "Overly aggressive optimization broke core ant behavior systems",
+    "Complex gradient calculations and trail quality assessments disrupted natural exploration",
+    "Enhanced hysteresis and memory systems caused decision paralysis",  
+    "Reduced startup timer (3s vs 5s) prevented proper behavior initialization",
+    "Multiple competing optimization systems created behavioral conflicts"
+  ],
+  "lessons_learned": [
+    "Small incremental changes are safer than comprehensive overhauls",
+    "Biological plausibility constraints exist for good reasons",
+    "Complex optimization systems can interfere with each other",
+    "Simple exploration behavior was already reasonably effective",
+    "Performance metrics can mislead - need to validate actual ant behavior"
+  ],
+  "recovery_actions": [
+    "Reverted all aggressive optimizations to restore basic functionality",
+    "Simplified sensing system to basic exploration-only behavior", 
+    "Removed complex gradient calculations and trail following algorithms",
+    "Restored startup timer to 5.0 seconds for proper initialization",
+    "Confirmed system stability - no more infinite restart loops"
   ],
   "next_planned_improvements": [
-    "Begin Generation 5 optimization focusing on averageTimeSinceGoal metric improvements",
-    "Implement 5 rounds of biological constraint-compliant tweaks",
-    "Optimize ant behavior algorithms within realistic constraints",
-    "Test advanced pheromone following strategies",
-    "Improve stuck detection and recovery mechanisms"
+    "Take conservative approach with single small optimizations",
+    "Test each change thoroughly before adding more complexity",
+    "Focus on maintaining stable baseline behavior while making targeted improvements",
+    "Consider Generation 4 (18.8 deliveries/min) as the current working baseline",
+    "Implement gentle pheromone following without disrupting exploration"
   ]
 }
