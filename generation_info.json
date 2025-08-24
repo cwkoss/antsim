@@ -1,35 +1,36 @@
 {
-  "current_generation": 3,
-  "description": "Text rendering fixes and enhanced directional indicators",
-  "timestamp": "2025-08-24T17:04:18Z",
-  "video_filename": "0003_readable_text_enhanced_indicators.mp4",
+  "current_generation": 4,
+  "description": "Complete text rendering overhaul with emoji fixes and overflow prevention",
+  "timestamp": "2025-08-24T20:03:43Z",
+  "video_filename": "0004_text_fixes_emoji_linebreaks.mp4",
   "performance_metrics": {
-    "deliveries_per_minute": 28.5,
-    "average_return_time_seconds": 12.4,
+    "deliveries_per_minute": 18.8,
+    "average_return_time_seconds": 14.6,
     "average_time_since_goal_seconds": null,
-    "simulation_duration_seconds": 300,
-    "target_frames": 593,
-    "frames_captured": 3555
+    "simulation_duration_seconds": 305,
+    "target_frames": 508,
+    "frames_captured": 3049
   },
   "key_changes": [
-    "Fixed text rendering bug - replaced solid rectangles with readable bitmap font patterns",
-    "Enhanced directional indicators to 2x2 white squares for better visibility",
-    "Added comprehensive character bitmap patterns (A-Z, a-z, 0-9, symbols)",
-    "Fixed text truncation - removed ellipsis limitation for full description display",
-    "Increased directional indicator distance from ant center for clarity",
-    "Implemented generation history tracking system"
+    "Fixed emoji display issues - replaced problematic emoji characters with ASCII alternatives",
+    "Added line breaks to prevent text overflow on right side of video overlay",
+    "Updated video overlay to display averageTimeSinceGoal as primary metric",
+    "Reorganized text layout with pipe separators for better readability",
+    "Split long status lines into separate display lines to prevent truncation",
+    "Expanded text overlay area from 80 to 85 pixels to accommodate additional lines"
   ],
   "technical_improvements": [
-    "Custom 6x8 bitmap font rendering system",
-    "Improved directional visualization with larger indicators",
-    "Generation history retention in separate tracking file",
-    "Better text overlay readability with proper character patterns"
+    "Complete emoji-free text rendering system using ASCII characters only",
+    "Multi-line text layout with proper overflow handling",
+    "Improved metrics display priority with averageTimeSinceGoal featured first",
+    "Better text spacing and visual organization in video overlays",
+    "Enhanced text readability with pipe-separated format"
   ],
   "next_planned_improvements": [
-    "Test automation wrapper scripts thoroughly",
-    "Validate averageTimeSinceGoal metric accuracy",
-    "Optimize pheromone trail following algorithms",
-    "Implement performance regression testing framework",
-    "Add more sophisticated arrow-based directional indicators"
+    "Begin Generation 5 optimization focusing on averageTimeSinceGoal metric improvements",
+    "Implement 5 rounds of biological constraint-compliant tweaks",
+    "Optimize ant behavior algorithms within realistic constraints",
+    "Test advanced pheromone following strategies",
+    "Improve stuck detection and recovery mechanisms"
   ]
 }

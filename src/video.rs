@@ -219,8 +219,8 @@ fn capture_simulation_frame(
         }
     }
     
-    // Add comprehensive text overlay at top (first 80 pixels height)
-    let text_height = 80;
+    // Add comprehensive text overlay at top (first 85 pixels height to accommodate 5 lines)
+    let text_height = 85;
     for y in 0..text_height {
         for x in 0..target_width {
             let idx = ((y * target_width + x) * 4) as usize;
@@ -410,25 +410,28 @@ fn render_text_overlay(
     let gen_text = format!("GEN {}: {}", generation_info.current_generation, generation_info.description);
     render_text_line(frame, width, &gen_text, 5, 10, [255, 255, 255]); // White text
     
-    // Line 2: Performance metrics (y = 25-30)  
-    let perf_text = format!("📊 {:.1}del/min {:.1}s ret {:.1}s goal", 
+    // Line 2: Performance metrics (y = 25-30) - Primary metric first
+    let perf_text = format!("M: {:.1}s goal | {:.1}del/min | {:.1}s ret", 
+        performance_tracker.average_time_since_goal,
         performance_tracker.deliveries_per_minute,
-        performance_tracker.average_return_time,
-        performance_tracker.average_time_since_goal
+        performance_tracker.average_return_time
     );
     render_text_line(frame, width, &perf_text, 5, 25, [0, 255, 255]); // Cyan text
     
-    // Line 3: Time and issues (y = 40-45)
-    let status_text = format!("⏱️ {:.0}s 🚨 {}stuck {}lost", 
-        elapsed_time,
+    // Line 3: Time and issues (y = 40-45) - Split into two lines to prevent overflow
+    let time_text = format!("T: {:.0}s elapsed", elapsed_time);
+    render_text_line(frame, width, &time_text, 5, 40, [255, 255, 0]); // Yellow text
+    
+    // Line 4: Issues status (y = 55-60)
+    let issues_text = format!("Issues: {}stuck {}lost", 
         performance_tracker.stuck_ants_count,
         performance_tracker.lost_ants_count
     );
-    render_text_line(frame, width, &status_text, 5, 40, [255, 255, 0]); // Yellow text
+    render_text_line(frame, width, &issues_text, 5, 55, [255, 100, 0]); // Orange text
     
-    // Line 4: Deliveries count (y = 55-60)
-    let delivery_text = format!("✅ {} deliveries total", performance_tracker.successful_deliveries);
-    render_text_line(frame, width, &delivery_text, 5, 55, [0, 255, 0]); // Green text
+    // Line 5: Deliveries count (y = 70-75) - Move down to accommodate split lines
+    let delivery_text = format!("D: {} deliveries total", performance_tracker.successful_deliveries);
+    render_text_line(frame, width, &delivery_text, 5, 70, [0, 255, 0]); // Green text
 }
 
 fn render_text_line(frame: &mut [u8], width: u32, text: &str, x_start: u32, y_start: u32, color: [u8; 3]) {
@@ -449,7 +452,7 @@ fn render_text_line(frame: &mut [u8], width: u32, text: &str, x_start: u32, y_st
                 let px = char_x + dx;
                 let py = y_start + dy as u32;
                 
-                if px < width && py < 75 { // Keep within text overlay area
+                if px < width && py < 85 { // Keep within expanded text overlay area
                     let idx = ((py * width + px) * 4) as usize;
                     if idx + 3 < frame.len() {
                         // Check if this pixel should be lit based on the bitmap
