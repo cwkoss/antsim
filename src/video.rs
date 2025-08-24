@@ -20,6 +20,7 @@ pub fn setup_video_camera() {
 pub fn video_recording_system(
     mut video_recorder: ResMut<VideoRecorder>,
     performance_tracker: Res<PerformanceTracker>,
+    generation_info: Res<GenerationInfo>,
     time: Res<Time>,
     pheromone_grid: Res<PheromoneGrid>,
     color_config: Res<ColorConfig>,
@@ -35,7 +36,7 @@ pub fn video_recording_system(
     
     if video_recorder.is_recording {
         // Create visual frame with actual simulation data (capture whole simulation)
-        capture_simulation_frame(&mut video_recorder, &performance_tracker, time.elapsed_seconds(), 
+        capture_simulation_frame(&mut video_recorder, &performance_tracker, &generation_info, time.elapsed_seconds(), 
                                &pheromone_grid, &color_config, &ant_query, &food_query, &nest_query);
     }
     
@@ -50,6 +51,7 @@ pub fn video_recording_system(
 fn capture_simulation_frame(
     video_recorder: &mut VideoRecorder, 
     performance_tracker: &PerformanceTracker, 
+    generation_info: &GenerationInfo,
     elapsed_time: f32,
     pheromone_grid: &PheromoneGrid,
     color_config: &ColorConfig,
@@ -175,7 +177,7 @@ fn capture_simulation_frame(
             color_config.ant_exploring_rgb()
         };
         
-        // Draw 4x4 pixel ant (slightly larger for better visibility)
+        // Draw 4x4 pixel ant body (slightly larger for better visibility)
         for dy in -2..2 {
             for dx in -2..2 {
                 let px = (ant_x + dx).max(0).min(target_width as i32 - 1) as u32;
@@ -190,10 +192,27 @@ fn capture_simulation_frame(
                 }
             }
         }
+        
+        // Add directional indicator - a bright white pixel in the direction the ant is facing
+        let direction = ant_state.current_direction;
+        let indicator_distance = 3.0; // Pixels from center
+        let indicator_x = ant_x + (direction.cos() * indicator_distance) as i32;
+        let indicator_y = ant_y + (direction.sin() * indicator_distance) as i32;
+        
+        if indicator_x >= 0 && indicator_x < target_width as i32 && 
+           indicator_y >= 0 && indicator_y < target_height as i32 {
+            let idx = ((indicator_y as u32 * target_width + indicator_x as u32) * 4) as usize;
+            if idx + 3 < frame.len() {
+                frame[idx] = 255;     // Bright white indicator
+                frame[idx + 1] = 255;
+                frame[idx + 2] = 255;
+                frame[idx + 3] = 255;
+            }
+        }
     }
     
-    // Add performance text overlay at top (first 60 pixels height)
-    let text_height = 60;
+    // Add comprehensive text overlay at top (first 80 pixels height)
+    let text_height = 80;
     for y in 0..text_height {
         for x in 0..target_width {
             let idx = ((y * target_width + x) * 4) as usize;
@@ -202,10 +221,13 @@ fn capture_simulation_frame(
                 frame[idx] = 0;       // R
                 frame[idx + 1] = 0;   // G  
                 frame[idx + 2] = 0;   // B
-                frame[idx + 3] = 180; // Semi-transparent
+                frame[idx + 3] = 200; // More opaque for better text readability
             }
         }
     }
+    
+    // Render text information (simple pixel text simulation)
+    render_text_overlay(&mut frame, target_width, target_height, generation_info, performance_tracker, elapsed_time);
     
     video_recorder.frames.push(frame);
 }
@@ -363,4 +385,69 @@ fn save_frame_as_png(
     
     println!("✅ PNG saved successfully: {}", path);
     Ok(())
+}
+
+fn render_text_overlay(
+    frame: &mut [u8],
+    width: u32, 
+    height: u32,
+    generation_info: &GenerationInfo,
+    performance_tracker: &PerformanceTracker,
+    elapsed_time: f32,
+) {
+    // Simple pixel-based text rendering - create bright colored pixels for text visibility
+    // This is a basic implementation for readability
+    
+    // Line 1: Generation info (y = 10-15)
+    let gen_text = format!("GEN {}: {:.40}...", generation_info.current_generation, generation_info.description);
+    render_text_line(frame, width, &gen_text, 5, 10, [255, 255, 255]); // White text
+    
+    // Line 2: Performance metrics (y = 25-30)  
+    let perf_text = format!("📊 {:.1}del/min {:.1}s ret {:.1}s goal", 
+        performance_tracker.deliveries_per_minute,
+        performance_tracker.average_return_time,
+        performance_tracker.average_time_since_goal
+    );
+    render_text_line(frame, width, &perf_text, 5, 25, [0, 255, 255]); // Cyan text
+    
+    // Line 3: Time and issues (y = 40-45)
+    let status_text = format!("⏱️ {:.0}s 🚨 {}stuck {}lost", 
+        elapsed_time,
+        performance_tracker.stuck_ants_count,
+        performance_tracker.lost_ants_count
+    );
+    render_text_line(frame, width, &status_text, 5, 40, [255, 255, 0]); // Yellow text
+    
+    // Line 4: Deliveries count (y = 55-60)
+    let delivery_text = format!("✅ {} deliveries total", performance_tracker.successful_deliveries);
+    render_text_line(frame, width, &delivery_text, 5, 55, [0, 255, 0]); // Green text
+}
+
+fn render_text_line(frame: &mut [u8], width: u32, text: &str, x_start: u32, y_start: u32, color: [u8; 3]) {
+    // Very simple character rendering - each character is 4x6 pixels with 1px spacing
+    let char_width = 4;
+    let char_height = 6;
+    let char_spacing = 1;
+    
+    for (char_index, _char) in text.chars().enumerate() {
+        let char_x = x_start + (char_index as u32) * (char_width + char_spacing);
+        
+        // Simple block character representation for visibility
+        for dy in 0..char_height {
+            for dx in 0..char_width {
+                let px = char_x + dx;
+                let py = y_start + dy;
+                
+                if px < width && py < 75 { // Keep within text overlay area
+                    let idx = ((py * width + px) * 4) as usize;
+                    if idx + 3 < frame.len() {
+                        frame[idx] = color[0];     // R
+                        frame[idx + 1] = color[1]; // G
+                        frame[idx + 2] = color[2]; // B
+                        frame[idx + 3] = 255;      // Full opacity
+                    }
+                }
+            }
+        }
+    }
 }

@@ -692,6 +692,9 @@ pub fn performance_analysis_system(
     let mut lost_food_carriers_count = 0;
     let runtime = time.elapsed_seconds();
     
+    // Clear previous frame's time-since-goal samples
+    performance_tracker.time_since_goal_samples.clear();
+    
     for ant in ants.iter() {
         // Count stuck ants (not moving for >3 seconds)
         if ant.stuck_timer > 3.0 {
@@ -713,12 +716,32 @@ pub fn performance_analysis_system(
            runtime - ant.food_carry_start_time > 30.0 {
             lost_food_carriers_count += 1;
         }
+        
+        // Calculate time since last goal achievement for each ant
+        let time_since_goal = if ant.last_goal_achievement_time > 0.0 {
+            runtime - ant.last_goal_achievement_time
+        } else {
+            // If ant has never achieved a goal, use time since spawn minus grace period
+            (runtime - ant.startup_timer).max(0.0)
+        };
+        
+        // Only include ants that have had reasonable time to achieve goals (after startup period)
+        if ant.startup_timer <= 0.0 {
+            performance_tracker.time_since_goal_samples.push(time_since_goal);
+        }
     }
     
     performance_tracker.stuck_ants_count = stuck_count;
     performance_tracker.oscillating_ants_count = oscillating_count;
     performance_tracker.lost_ants_count = lost_count;
     performance_tracker.lost_food_carriers_count = lost_food_carriers_count;
+    
+    // Calculate average time since goal achievement
+    performance_tracker.average_time_since_goal = if !performance_tracker.time_since_goal_samples.is_empty() {
+        performance_tracker.time_since_goal_samples.iter().sum::<f32>() / performance_tracker.time_since_goal_samples.len() as f32
+    } else {
+        0.0
+    };
     
     // Initialize simulation start time on first run
     if performance_tracker.simulation_start_time == 0.0 {
@@ -733,6 +756,7 @@ pub fn performance_analysis_system(
         println!("   Deliveries/min: {:.2}", performance_tracker.deliveries_per_minute);
         println!("   Avg delivery time: {:.1}s", performance_tracker.average_delivery_time);
         println!("   Avg return time: {:.1}s", performance_tracker.average_return_time);
+        println!("   ⭐ Avg time since goal: {:.1}s", performance_tracker.average_time_since_goal);
         println!("   Stuck ants: {}", performance_tracker.stuck_ants_count);
         println!("   Lost ants: {}", performance_tracker.lost_ants_count);
         println!("   Lost food carriers: {}", performance_tracker.lost_food_carriers_count);
@@ -748,6 +772,7 @@ pub fn performance_analysis_system(
         println!("   Deliveries/min: {:.2}", performance_tracker.deliveries_per_minute);
         println!("   Avg delivery time: {:.1}s", performance_tracker.average_delivery_time);
         println!("   Avg return time: {:.1}s", performance_tracker.average_return_time);
+        println!("   ⭐ Avg time since goal: {:.1}s", performance_tracker.average_time_since_goal);
         println!("   Stuck ants: {}", performance_tracker.stuck_ants_count);
         println!("   Lost ants: {}", performance_tracker.lost_ants_count);
         println!("   Lost food carriers: {}", performance_tracker.lost_food_carriers_count);
@@ -862,6 +887,7 @@ pub fn food_collection_system(
                         ant.food_pickup_time = time.elapsed_seconds(); // Track pickup time
                         ant.has_found_food = true; // Mark that this ant has found food
                         ant.food_carry_start_time = time.elapsed_seconds(); // Track when started carrying for return time
+                        ant.last_goal_achievement_time = time.elapsed_seconds(); // GOAL ACHIEVEMENT: Found food!
                         performance_tracker.total_food_collected += take_amount;
                         
                         // Orient toward nest immediately after picking up food
@@ -885,6 +911,7 @@ pub fn food_collection_system(
                 ant.carrying_food = false;
                 ant.delivery_attempts += 1;
                 ant.successful_deliveries += 1;
+                ant.last_goal_achievement_time = time.elapsed_seconds(); // GOAL ACHIEVEMENT: Delivered food!
                 
                 // Track delivery time (total cycle time)
                 let delivery_time = time.elapsed_seconds() - ant.food_pickup_time;
@@ -1104,6 +1131,8 @@ pub fn restart_system(
                     startup_timer: 5.0, // OPTIMIZATION 4: Further reduced to 5s for even faster food seeking
                     has_found_food: false, // Track if ant has ever found food
                     food_carry_start_time: 0.0, // When ant picked up food
+                    last_goal_achievement_time: 0.0, // Initialize as never achieved a goal
+                    current_goal_start_time: 0.0, // Will be set when startup timer expires
                 },
                 Velocity {
                     x: (rand::random::<f32>() * 2.0 - 1.0) * 1.5,

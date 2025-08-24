@@ -115,11 +115,18 @@ cargo run
 
 ### Planned Features
 - [ ] Text overlay on videos with generation number and change descriptions
---- How should we store generation information for use across runs?  Should it live here in this claude.md and be updated each run? or is there a better place to store this?  Should we make a 'run history' file that lists generation number and change descriptions?
+- [ ] Generation tracking system: Create `generation_info.json` to store current generation number, description, and timestamp
+- [ ] Challenge rules documentation: Create `CONSTRAINTS.md` file to codify "fair play" boundaries that prevent optimization shortcuts and ensure focus on realistic ant behavior
+- [ ] Video organization system: Restructure to `videos/` (clean numbered names) + `debug/` (frames for debugging) structure like:
+  ```
+  videos/
+  ├── 0001_pheromone_visualization.mp4
+  ├── 0002_behavior_optimization.mp4  
+  debug/
+  └── frames_gen_0001/
+  ```
 - [ ] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
-- [ ] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation. 
-- [ ] Previously, claude has 'cheated' by changing the parameters of the challenge to better satisfy the optimization function rather than focusing on tweaking behavior.  We need to develop a way to codify challenges in a way that clearly defines the boundaries of 'fair' changes that can be made to try to improve the function in order to focus on improving the way pheromones and ant behavior work so our optimizations will converge toward increasingly ant-like behavior. Ex. like “do not reduce food distance,” "no not reduce quantity of food", "do not allow ants to pick up food from far away", "do not let ants see the full world state outside a reasonable perceptual distance", etc.
-- [ ] simulation_videos folder is quite messy.  lets figure out a better scheme for how to store the pngs and videos, and maybe make the pngs temporary (have the wrapper clean them up?) eventually i would like to have a folder that only contains the videos in order (maybe with a four digit generation number as first characters to sort cleanly), but i appreciate the value of being able to have more info for debugging while we find our footing... so how do we get the best of both worlds?
+- [ ] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal (open to other names) across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation.
 - [ ] Automated test framework for performance regression detection
 - [ ] Parameter optimization based on video analysis
 - [ ] Enhanced ant state visualization (directional indicators)

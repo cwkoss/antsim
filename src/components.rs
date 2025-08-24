@@ -25,6 +25,8 @@ pub struct PerformanceTracker {
     pub lost_food_carriers_count: u32, // Ants carrying food but lost (can't find nest)
     pub average_return_time: f32, // Average time for food-carrying ants to return to nest
     pub return_times: Vec<f32>, // Track individual return times
+    pub average_time_since_goal: f32, // NEW METRIC: Average time since each ant reached its goal
+    pub time_since_goal_samples: Vec<f32>, // Individual ant time-since-goal samples for this frame
 }
 
 #[derive(Resource)]
@@ -36,6 +38,70 @@ pub struct VideoRecorder {
     pub max_frames: usize, // 30 seconds worth at ~60fps = 1800 frames
     pub test_number: u32,
     pub changes_description: String,
+}
+
+#[derive(Resource)]
+pub struct GenerationInfo {
+    pub current_generation: u32,
+    pub description: String,
+    pub timestamp: String,
+    pub video_filename: String,
+}
+
+impl Default for GenerationInfo {
+    fn default() -> Self {
+        Self {
+            current_generation: 1,
+            description: "Initial implementation".to_string(),
+            timestamp: "2025-08-24".to_string(),
+            video_filename: "0001_initial.mp4".to_string(),
+        }
+    }
+}
+
+impl GenerationInfo {
+    pub fn from_json_file() -> Self {
+        use std::fs;
+        
+        let json_content = match fs::read_to_string("generation_info.json") {
+            Ok(content) => content,
+            Err(_) => return GenerationInfo::default(), // Fallback to default if file not found
+        };
+        
+        // Simple JSON parsing for the fields we need
+        let mut generation = 1;
+        let mut description = "Initial implementation".to_string();
+        let mut timestamp = "2025-08-24".to_string();
+        let mut video_filename = "0001_initial.mp4".to_string();
+        
+        // Basic parsing - look for the fields we need
+        for line in json_content.lines() {
+            let line = line.trim();
+            if line.starts_with("\"current_generation\":") {
+                if let Some(value) = line.split(':').nth(1) {
+                    let value = value.trim().trim_end_matches(',');
+                    generation = value.parse().unwrap_or(1);
+                }
+            } else if line.starts_with("\"description\":") {
+                if let Some(value) = line.split(':').nth(1) {
+                    let value = value.trim().trim_start_matches('"').trim_end_matches("\",");
+                    description = value.to_string();
+                }
+            } else if line.starts_with("\"video_filename\":") {
+                if let Some(value) = line.split(':').nth(1) {
+                    let value = value.trim().trim_start_matches('"').trim_end_matches("\",");
+                    video_filename = value.to_string();
+                }
+            }
+        }
+        
+        Self {
+            current_generation: generation,
+            description,
+            timestamp,
+            video_filename,
+        }
+    }
 }
 
 impl Default for VideoRecorder {
@@ -69,6 +135,8 @@ impl Default for PerformanceTracker {
             lost_food_carriers_count: 0,
             average_return_time: 0.0,
             return_times: Vec::new(),
+            average_time_since_goal: 0.0,
+            time_since_goal_samples: Vec::new(),
         }
     }
 }
@@ -126,6 +194,8 @@ pub struct AntState {
     pub startup_timer: f32, // Grace period for simple behavior after spawning
     pub has_found_food: bool, // Track if ant has ever found food to identify "lost" ants
     pub food_carry_start_time: f32, // When ant picked up food (for return time tracking)
+    pub last_goal_achievement_time: f32, // When ant last reached a goal (found food or delivered to nest)
+    pub current_goal_start_time: f32, // When ant started pursuing current goal
 }
 
 #[derive(Component, Default)]

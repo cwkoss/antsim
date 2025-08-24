@@ -35,6 +35,7 @@ fn main() {
         .insert_resource(PerformanceTracker::default())
         .insert_resource(VideoRecorder::default())
         .insert_resource(ColorConfig::default())
+        .insert_resource(GenerationInfo::from_json_file())
         .add_systems(Startup, (setup, setup_pheromone_visualization, setup_debug_ui, setup_video_camera))
         .add_systems(
             Update,
@@ -142,6 +143,8 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
                 startup_timer: 5.0, // OPTIMIZATION 4: Further reduced to 5s for even faster food seeking
                 has_found_food: false, // Track if ant has ever found food
                 food_carry_start_time: 0.0, // When ant picked up food
+                last_goal_achievement_time: 0.0, // Initialize as never achieved a goal
+                current_goal_start_time: 0.0, // Will be set when startup timer expires
             },
             Velocity {
                 x: (rand::random::<f32>() * 2.0 - 1.0) * 1.5,
