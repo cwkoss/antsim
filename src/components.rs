@@ -1,0 +1,169 @@
+use bevy::prelude::*;
+
+#[derive(Resource, Default)]
+pub struct DebugInfo {
+    pub cursor_world_pos: Vec2,
+    pub hovered_entity: Option<Entity>,
+    pub selected_entity: Option<Entity>,
+    pub pheromone_info: String,
+    pub entity_info: String,
+}
+
+#[derive(Resource)]
+pub struct PerformanceTracker {
+    pub successful_deliveries: u32,
+    pub failed_attempts: u32,
+    pub total_food_collected: f32,
+    pub average_delivery_time: f32,
+    pub delivery_times: Vec<f32>,
+    pub simulation_start_time: f32,
+    pub last_delivery_time: f32,
+    pub deliveries_per_minute: f32,
+    pub stuck_ants_count: u32,
+    pub oscillating_ants_count: u32,
+    pub lost_ants_count: u32, // Ants that never found food
+    pub lost_food_carriers_count: u32, // Ants carrying food but lost (can't find nest)
+    pub average_return_time: f32, // Average time for food-carrying ants to return to nest
+    pub return_times: Vec<f32>, // Track individual return times
+}
+
+#[derive(Resource)]
+pub struct VideoRecorder {
+    pub frames: Vec<Vec<u8>>, // Store RGBA frames
+    pub is_recording: bool,
+    pub frame_width: u32,
+    pub frame_height: u32,
+    pub max_frames: usize, // 30 seconds worth at ~60fps = 1800 frames
+    pub test_number: u32,
+    pub changes_description: String,
+}
+
+impl Default for VideoRecorder {
+    fn default() -> Self {
+        Self {
+            frames: Vec::new(),
+            is_recording: false,
+            frame_width: 406, // Mobile aspect ratio width (9:16 ≈ 406:720, even width for H.264)
+            frame_height: 720,
+            max_frames: usize::MAX, // No limit - capture entire simulation
+            test_number: 1,
+            changes_description: "BASELINE: 50 ants, 10 food sources 333-500 units from nest, direct nest homing for food carriers".to_string(),
+        }
+    }
+}
+
+impl Default for PerformanceTracker {
+    fn default() -> Self {
+        Self {
+            successful_deliveries: 0,
+            failed_attempts: 0,
+            total_food_collected: 0.0,
+            average_delivery_time: 0.0,
+            delivery_times: Vec::new(),
+            simulation_start_time: 0.0,
+            last_delivery_time: 0.0,
+            deliveries_per_minute: 0.0,
+            stuck_ants_count: 0,
+            oscillating_ants_count: 0,
+            lost_ants_count: 0,
+            lost_food_carriers_count: 0,
+            average_return_time: 0.0,
+            return_times: Vec::new(),
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct PheromoneDebugText;
+
+#[derive(Component)]
+pub struct EntityDebugText;
+
+#[derive(Component)]
+pub struct PerformanceText;
+
+#[derive(Component)]
+pub struct SelectedAnt;
+
+#[derive(Component)]
+pub struct AntOutline;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AntBehaviorState {
+    Exploring,  // Random walk with occasional sensing
+    Sensing,    // Paused and sampling all directions
+    Following,  // Moving toward strongest pheromone gradient
+    Tracking,   // Continuing in current direction while monitoring
+}
+
+#[derive(Component)]
+pub struct AntState {
+    pub carrying_food: bool,
+    pub hunger: f32,
+    pub sensitivity_adapt: f32,
+    pub food_collection_timer: f32, // Time spent collecting food
+    pub last_pheromone_strength: f32, // Track pheromone strength from last frame
+    pub distance_from_food: f32, // Track distance traveled since picking up food trail
+    pub distance_from_nest: f32, // Track distance traveled from nest (for nest pheromone strength)
+    pub has_exit_direction: bool, // Track if ant has already chosen an exit direction
+    pub behavior_state: AntBehaviorState,
+    pub sensing_timer: f32, // Time until next sensing check
+    pub current_direction: f32, // Current movement direction in radians
+    pub trail_strength: f32, // Strength of trail being followed
+    pub momentum_timer: f32, // Time to continue in current direction
+    pub last_position: Vec2, // Previous position for stuck detection
+    pub stuck_timer: f32, // Time spent in same general area
+    pub direction_changes: u32, // Count of recent direction changes
+    pub last_sensing_result: [f32; 8], // Results from last 8-direction sensing
+    pub trail_memory: [f32; 5], // Recent trail directions (rolling buffer)
+    pub memory_index: usize, // Current position in trail memory buffer
+    pub trail_quality: f32, // Assessment of current trail quality (consistency)
+    pub hysteresis_threshold: f32, // Dynamic threshold for direction changes
+    pub consecutive_good_trail_time: f32, // Time spent on consistent, strong trails
+    pub food_pickup_time: f32, // When food was picked up (for delivery time tracking)
+    pub delivery_attempts: u32, // Number of times this ant has attempted delivery
+    pub successful_deliveries: u32, // Number of successful deliveries by this ant
+    pub startup_timer: f32, // Grace period for simple behavior after spawning
+    pub has_found_food: bool, // Track if ant has ever found food to identify "lost" ants
+    pub food_carry_start_time: f32, // When ant picked up food (for return time tracking)
+}
+
+#[derive(Component, Default)]
+pub struct Velocity {
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(Component)]
+pub struct FoodSource {
+    pub amount: f32,
+    pub max_amount: f32,
+}
+
+#[derive(Component)]
+pub struct Nest {
+    pub capacity: f32,
+}
+
+#[derive(Component)]
+pub struct PheromoneData {
+    pub food_trail: f32,
+    pub nest_trail: f32,
+    pub alarm: f32,
+}
+
+impl Default for PheromoneData {
+    fn default() -> Self {
+        Self {
+            food_trail: 0.0,
+            nest_trail: 0.0,
+            alarm: 0.0,
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct PheromoneVisualization {
+    pub grid_x: usize,
+    pub grid_y: usize,
+}
