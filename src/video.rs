@@ -193,20 +193,28 @@ fn capture_simulation_frame(
             }
         }
         
-        // Add directional indicator - a bright white pixel in the direction the ant is facing
+        // Add enhanced directional indicator - a 2x2 bright white square in the direction the ant is facing
         let direction = ant_state.current_direction;
-        let indicator_distance = 3.0; // Pixels from center
+        let indicator_distance = 4.0; // Pixels from center, increased for better visibility
         let indicator_x = ant_x + (direction.cos() * indicator_distance) as i32;
         let indicator_y = ant_y + (direction.sin() * indicator_distance) as i32;
         
-        if indicator_x >= 0 && indicator_x < target_width as i32 && 
-           indicator_y >= 0 && indicator_y < target_height as i32 {
-            let idx = ((indicator_y as u32 * target_width + indicator_x as u32) * 4) as usize;
-            if idx + 3 < frame.len() {
-                frame[idx] = 255;     // Bright white indicator
-                frame[idx + 1] = 255;
-                frame[idx + 2] = 255;
-                frame[idx + 3] = 255;
+        // Draw a 2x2 pixel indicator for better visibility
+        for dy in -1..1 {
+            for dx in -1..1 {
+                let px = indicator_x + dx;
+                let py = indicator_y + dy;
+                
+                if px >= 0 && px < target_width as i32 && 
+                   py >= 0 && py < target_height as i32 {
+                    let idx = ((py as u32 * target_width + px as u32) * 4) as usize;
+                    if idx + 3 < frame.len() {
+                        frame[idx] = 255;     // Bright white indicator
+                        frame[idx + 1] = 255;
+                        frame[idx + 2] = 255;
+                        frame[idx + 3] = 255;
+                    }
+                }
             }
         }
     }
@@ -424,30 +432,83 @@ fn render_text_overlay(
 }
 
 fn render_text_line(frame: &mut [u8], width: u32, text: &str, x_start: u32, y_start: u32, color: [u8; 3]) {
-    // Very simple character rendering - each character is 4x6 pixels with 1px spacing
-    let char_width = 4;
-    let char_height = 6;
+    // Better character rendering with actual readable patterns
+    let char_width = 6;
+    let char_height = 8;
     let char_spacing = 1;
     
-    for (char_index, _char) in text.chars().enumerate() {
+    for (char_index, ch) in text.chars().enumerate() {
         let char_x = x_start + (char_index as u32) * (char_width + char_spacing);
         
-        // Simple block character representation for visibility
-        for dy in 0..char_height {
+        // Get the bitmap pattern for this character
+        let pattern = get_char_pattern(ch);
+        
+        // Render the character based on its bitmap pattern
+        for (dy, row) in pattern.iter().enumerate() {
             for dx in 0..char_width {
                 let px = char_x + dx;
-                let py = y_start + dy;
+                let py = y_start + dy as u32;
                 
                 if px < width && py < 75 { // Keep within text overlay area
                     let idx = ((py * width + px) * 4) as usize;
                     if idx + 3 < frame.len() {
-                        frame[idx] = color[0];     // R
-                        frame[idx + 1] = color[1]; // G
-                        frame[idx + 2] = color[2]; // B
-                        frame[idx + 3] = 255;      // Full opacity
+                        // Check if this pixel should be lit based on the bitmap
+                        let bit_index = char_width - 1 - dx; // Reverse for correct orientation
+                        let pixel_on = (row & (1 << bit_index)) != 0;
+                        
+                        if pixel_on {
+                            frame[idx] = color[0];     // R
+                            frame[idx + 1] = color[1]; // G
+                            frame[idx + 2] = color[2]; // B
+                            frame[idx + 3] = 255;      // Full opacity
+                        }
+                        // Don't modify transparent pixels (leave background as is)
                     }
                 }
             }
         }
+    }
+}
+
+fn get_char_pattern(ch: char) -> [u8; 8] {
+    // 6x8 bitmap patterns for common characters (each u8 represents a row)
+    match ch {
+        'G' => [0b011110, 0b100001, 0b100000, 0b100111, 0b100001, 0b100001, 0b011110, 0b000000],
+        'E' => [0b111111, 0b100000, 0b100000, 0b111100, 0b100000, 0b100000, 0b111111, 0b000000],
+        'N' => [0b100001, 0b110001, 0b101001, 0b100101, 0b100011, 0b100001, 0b100001, 0b000000],
+        'R' => [0b111110, 0b100001, 0b100001, 0b111110, 0b100010, 0b100001, 0b100001, 0b000000],
+        'A' => [0b011110, 0b100001, 0b100001, 0b111111, 0b100001, 0b100001, 0b100001, 0b000000],
+        'T' => [0b111111, 0b001000, 0b001000, 0b001000, 0b001000, 0b001000, 0b001000, 0b000000],
+        'I' => [0b111111, 0b001000, 0b001000, 0b001000, 0b001000, 0b001000, 0b111111, 0b000000],
+        'O' => [0b011110, 0b100001, 0b100001, 0b100001, 0b100001, 0b100001, 0b011110, 0b000000],
+        'S' => [0b011111, 0b100000, 0b100000, 0b011110, 0b000001, 0b000001, 0b111110, 0b000000],
+        'L' => [0b100000, 0b100000, 0b100000, 0b100000, 0b100000, 0b100000, 0b111111, 0b000000],
+        'C' => [0b011110, 0b100001, 0b100000, 0b100000, 0b100000, 0b100001, 0b011110, 0b000000],
+        'D' => [0b111110, 0b100001, 0b100001, 0b100001, 0b100001, 0b100001, 0b111110, 0b000000],
+        'M' => [0b100001, 0b110011, 0b101101, 0b100001, 0b100001, 0b100001, 0b100001, 0b000000],
+        'P' => [0b111110, 0b100001, 0b100001, 0b111110, 0b100000, 0b100000, 0b100000, 0b000000],
+        'U' => [0b100001, 0b100001, 0b100001, 0b100001, 0b100001, 0b100001, 0b011110, 0b000000],
+        'V' => [0b100001, 0b100001, 0b100001, 0b100001, 0b010010, 0b001100, 0b001100, 0b000000],
+        'H' => [0b100001, 0b100001, 0b100001, 0b111111, 0b100001, 0b100001, 0b100001, 0b000000],
+        'F' => [0b111111, 0b100000, 0b100000, 0b111100, 0b100000, 0b100000, 0b100000, 0b000000],
+        'K' => [0b100001, 0b100010, 0b100100, 0b111000, 0b100100, 0b100010, 0b100001, 0b000000],
+        'Y' => [0b100001, 0b100001, 0b010010, 0b001100, 0b001000, 0b001000, 0b001000, 0b000000],
+        'B' => [0b111110, 0b100001, 0b100001, 0b111110, 0b100001, 0b100001, 0b111110, 0b000000],
+        ' ' => [0b000000, 0b000000, 0b000000, 0b000000, 0b000000, 0b000000, 0b000000, 0b000000],
+        ':' => [0b000000, 0b011000, 0b011000, 0b000000, 0b011000, 0b011000, 0b000000, 0b000000],
+        '.' => [0b000000, 0b000000, 0b000000, 0b000000, 0b000000, 0b011000, 0b011000, 0b000000],
+        '/' => [0b000001, 0b000010, 0b000100, 0b001000, 0b010000, 0b100000, 0b000000, 0b000000],
+        '0' => [0b011110, 0b100001, 0b100011, 0b100101, 0b101001, 0b100001, 0b011110, 0b000000],
+        '1' => [0b001000, 0b011000, 0b001000, 0b001000, 0b001000, 0b001000, 0b011100, 0b000000],
+        '2' => [0b011110, 0b100001, 0b000001, 0b011110, 0b100000, 0b100000, 0b111111, 0b000000],
+        '3' => [0b011110, 0b100001, 0b000001, 0b011110, 0b000001, 0b100001, 0b011110, 0b000000],
+        '4' => [0b100001, 0b100001, 0b100001, 0b111111, 0b000001, 0b000001, 0b000001, 0b000000],
+        '5' => [0b111111, 0b100000, 0b100000, 0b111110, 0b000001, 0b000001, 0b111110, 0b000000],
+        '6' => [0b011110, 0b100000, 0b100000, 0b111110, 0b100001, 0b100001, 0b011110, 0b000000],
+        '7' => [0b111111, 0b000001, 0b000010, 0b000100, 0b001000, 0b010000, 0b100000, 0b000000],
+        '8' => [0b011110, 0b100001, 0b100001, 0b011110, 0b100001, 0b100001, 0b011110, 0b000000],
+        '9' => [0b011110, 0b100001, 0b100001, 0b011111, 0b000001, 0b000001, 0b011110, 0b000000],
+        // Default for unknown characters - show a small box
+        _ => [0b111111, 0b100001, 0b100001, 0b100001, 0b100001, 0b100001, 0b111111, 0b000000],
     }
 }
