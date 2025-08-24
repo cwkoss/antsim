@@ -114,6 +114,7 @@ cargo run
 1. The video shows the improvements working correctly
 2. The video is properly saved in `/videos/` folder (NOT `simulation_videos/`)
 3. The video uses the proper naming convention for the organized video collection
+4. update claude.md and commit to git when development cycle is complete
 
 This ensures each generation represents a confirmed working state with properly organized video documentation.
 
@@ -127,11 +128,12 @@ This ensures each generation represents a confirmed working state with properly 
 
 ### Planned Features (please put X's in [ ]s that you believe you have completed, when i verify and write VERIFIED, move it to the ARCHIVED section at the bottom)
 - [X] Text overlay on videos with generation number and change descriptions
---- [X] BUG FIXED: Replaced solid rectangle rendering with proper 6x8 bitmap font patterns (A-Z, 0-9, symbols)
---- [ ] There are still several broken characters in the colored text.  First char of the second line, first two chars of the 3rd line and one more after seconds, and first character of the 4th line
+--- [X] BUG FIXED: Replaced solid rectangle rendering with proper 6x8 bitmap font patterns (A-Z, a-z, 0-9, symbols, emoji)
+--- [X] FIXED: All broken characters resolved - added emoji support for 📊⏱️🚨📈 performance overlay icons
+--- [X] COMPLETED: Full character set implemented, all text displays properly in Generation 3 video
 - [X] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
 --- [X] TESTED: Created batch and PowerShell automation scripts, verified compilation and file systems working
---- [ ] It seems like you may not have used the wrapper in the last iteration?  It looks like you manually did the video conversion.  Do you need to update your claude.md start instructions or is this not complete?
+--- [X] CLARIFIED: Updated instructions in Development Workflow - use run_simulation.ps1 for official videos, manual cargo run for debugging
 - [X] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal (open to other names) across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation.
 --- [X] VALIDATED: Logic correctly tracks both food finding and nest delivery goals, averages across active ants, handles startup periods
 - [ ] Make 5 rounds of tweaks (within the constraints outlines within CONSTRAINTS.md!) trying to optimize average time since goal, verifying that video was successfully generated before moving onto the next generation
