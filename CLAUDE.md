@@ -113,11 +113,14 @@ cargo run
 
 ## Known Issues & TODOs
 
-### Planned Features
-- [ ] Text overlay on videos with generation number and change descriptions
-- [ ] Generation tracking system: Create `generation_info.json` to store current generation number, description, and timestamp
-- [ ] Challenge rules documentation: Create `CONSTRAINTS.md` file to codify "fair play" boundaries that prevent optimization shortcuts and ensure focus on realistic ant behavior
-- [ ] Video organization system: Restructure to `videos/` (clean numbered names) + `debug/` (frames for debugging) structure like:
+### Planned Features (please put X's in [ ]s that you believe you have completed, when i verify and write VERIFIED, move it to the ARCHIVED section at the bottom)
+- [X] Text overlay on videos with generation number and change descriptions
+--- [ ] BUG: I can see where text generation is being attempted, but the characters are being rendered as solid rectangles, it seems like there is some sort of error with text rendering in the video pipeline
+- [X] Generation tracking system: Create `generation_info.json` to store current generation number, description, and timestamp
+--- [ ] Tweak: lets retain past generation info somewhere. Either push it to a generation_history file, or restructure this file to accomodate multiple entries.  I like what you're doing with it though. 
+- [X] Challenge rules documentation: Create `CONSTRAINTS.md` file to codify "fair play" boundaries that prevent optimization shortcuts and ensure focus on realistic ant behavior
+--- VERIFIED
+- [X] Video organization system: Restructure to `videos/` (clean numbered names) + `debug/` (frames for debugging) structure like:
   ```
   videos/
   ├── 0001_pheromone_visualization.mp4
@@ -125,11 +128,13 @@ cargo run
   debug/
   └── frames_gen_0001/
   ```
-- [ ] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
-- [ ] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal (open to other names) across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation.
+--- VERIFIED
+- [X] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
+- [X] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal (open to other names) across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation.
 - [ ] Automated test framework for performance regression detection
 - [ ] Parameter optimization based on video analysis
-- [ ] Enhanced ant state visualization (directional indicators)
+- [X] Enhanced ant state visualization (directional indicators)
+--- I don't see directional indicators in the video render, are they in the simulation?  Or is there a bug?
 
 ### Current Limitations
 - No automated linting/formatting commands configured
@@ -168,7 +173,7 @@ ffmpeg/                # Local FFmpeg installation for video conversion
 This configuration enables Claude to understand the ant colony simulation architecture, run appropriate commands, and maintain consistency in the pheromone visualization system across both real-time simulation and video recording.
 
 
---- Can ignore for now  everything below this --- 
+--- ARCHIVE: Can ignore for now  everything below this --- 
 
 ### Future challenges and later development ideas
 - Adding obstacles to the terrain (rocks? walls?) so ants have to path around them to reach food sources effectively, optimal paths will no longer be straight
@@ -179,3 +184,6 @@ This configuration enables Claude to understand the ant colony simulation archit
 - Dueling colonies? predators? ant warfare?
 - world complexity like seasonal changes, weather effects, different terrain types, obstacle changes mid-run
 - ant role specialization, 'dances' to maintain or optimize pheromone trails
+
+
+### 
