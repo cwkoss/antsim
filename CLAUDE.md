@@ -100,12 +100,11 @@ cargo run
 
 ### Making Changes
 1. Modify relevant system in src/
-2. **For testing/debugging**: Test with `cargo run` 
-3. **For final generation videos**: Use `./run_simulation.ps1` (automated wrapper)
-4. Let simulation run for 5 minutes to capture video
-5. Review generated MP4 in videos/ (if using wrapper) or simulation_videos/ (if manual)
-6. Analyze performance metrics from console output
-7. **Commit all changes to git at the end of every development cycle**
+2. **For all attempts (even tests and debugging)**: Use `./run_simulation.ps1` (automated wrapper)
+3. Let simulation run for 5 minutes to capture video
+4. Review generated MP4 in videos/ (if using wrapper) or simulation_videos/ (if manual)
+5. Analyze performance metrics from console output
+6. **Commit all changes to git at the end of every development cycle**
 
 **Note**: The `run_simulation.ps1` wrapper automatically handles video conversion and file organization. Use it for generating official generation videos. Use manual `cargo run` only for quick testing or when debugging text rendering issues.
 
@@ -142,6 +141,7 @@ cargo run
 --- [ ] : FIX NOT WORKING emoji support isn't working, still displaying boxes.  Maybe just drop the emojis and use         │
 │   characters.  Also the description text is still flowing off the right side, I think we need to   │
 │   add line breaks.     
+--- VERIFIED
 - [X] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
 --- [X] TESTED: Created batch and PowerShell automation scripts, verified compilation and file systems working
 --- [X] CLARIFIED: Updated instructions in Development Workflow - use run_simulation.ps1 for official videos, manual cargo run for debugging
