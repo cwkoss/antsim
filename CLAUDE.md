@@ -106,7 +106,7 @@ cargo run
 5. Analyze performance metrics from console output
 6. **Commit all changes to git at the end of every development cycle**
 
-**Note**: The `run_simulation.ps1` wrapper automatically handles video conversion and file organization. Use it for generating official generation videos. Use manual `cargo run` only for quick testing or when debugging text rendering issues.
+**Note**: Use `run_simulation.ps1` (PowerShell) or `run_simulation.sh` (Bash) wrapper scripts that automatically handle video conversion and file organization. Use them for generating official generation videos. Use manual `cargo run` only for quick testing or when debugging text rendering issues.
 
 ### Generation Increment Rules
 **IMPORTANT**: A video MUST be generated for every development cycle, regardless of success or failure. Do not increment generation numbers until AFTER a video has been generated AND properly saved. The generation number should only be updated once we have confirmed:
@@ -145,9 +145,10 @@ cargo run
 - [X] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
 --- [X] TESTED: Created batch and PowerShell automation scripts, verified compilation and file systems working
 --- [X] CLARIFIED: Updated instructions in Development Workflow - use run_simulation.ps1 for official videos, manual cargo run for debugging
+--- [X] FIXED: Created run_simulation.sh for bash compatibility alongside run_simulation.ps1 for PowerShell - both scripts now work in their respective environments
 - [X] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal (open to other names) across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation.
 --- [X] VALIDATED: Logic correctly tracks both food finding and nest delivery goals, averages across active ants, handles startup periods
---- [ ] Video is displaying deliveries per minute, as that is no longer the primary optimization metric, the video should display avg time since goal
+--- [X] COMPLETED: Video now displays "AvgGoalTime: X.Xs" as the primary metric, with deliveries/min as secondary
 - [X] Make 5 rounds of tweaks (within the constraints outlines within CONSTRAINTS.md!) trying to optimize average time since goal, verifying that video was successfully generated before moving onto the next generation
 --- [X] COMPLETED BUT FAILED: Generation 5 attempted aggressive optimization with 5 rounds of improvements but caused catastrophic system failure (97.9% performance drop from 18.8 to 0.4 deliveries/min). All optimizations reverted and failure documented in video 0005_failed_optimization_aggressive_changes_broke_behavior.mp4
 --- [X] LESSON LEARNED: Incremental changes are safer than comprehensive overhauls. Simple exploration behavior was already reasonably effective.

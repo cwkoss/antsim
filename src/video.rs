@@ -411,7 +411,7 @@ fn render_text_overlay(
     render_text_line(frame, width, &gen_text, 5, 10, [255, 255, 255]); // White text
     
     // Line 2: Performance metrics (y = 25-30) - Primary metric first
-    let perf_text = format!("M: {:.1}s goal | {:.1}del/min | {:.1}s ret", 
+    let perf_text = format!("AvgGoalTime: {:.1}s | {:.1}del/min | {:.1}s ret", 
         performance_tracker.average_time_since_goal,
         performance_tracker.deliveries_per_minute,
         performance_tracker.average_return_time
