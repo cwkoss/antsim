@@ -1,0 +1,21 @@
+[package]
+name = "antsim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14"
+rand = "0.8"
+rayon = "1.8"
+noise = "0.9"
+serde = { version = "1.0", features = ["derive"] }
+# Video recording dependencies (lightweight)
+chrono = "0.4"
+png = "0.17"
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+lto = true
+codegen-units = 1

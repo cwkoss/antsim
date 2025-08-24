@@ -1,0 +1,10 @@
+# Ignore generated videos and frames
+simulation_videos/
+
+# Ignore local ffmpeg installation
+ffmpeg/
+
+# Ignore target
+target/
+
+.claude/

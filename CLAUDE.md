@@ -1,0 +1,174 @@
+# Claude Code Configuration for Ant Colony Simulation
+
+## Project Overview
+This is a Bevy-based ant colony simulation written in Rust that models emergent behavior, pheromone trails, and food collection dynamics. The simulation includes real-time video recording capabilities with scientifically accurate pheromone visualization.
+
+## Project Goals
+
+Model ant behavior accurately and interestingly to show the beauty of emergent behavior from a swarm of simple agents working together with simple logic.  Starting with a relatively simple easy challenge, once the ant behavior seems accurate enough, the challenge (and possibly optimization metrics) will be increased to put pressure on modeling the behavior more accurately, and its ability to adapt to new challenges and obstacles, until we finally arrive at something that is convincingly ant-like. 
+
+By generating videos of each iteration of the simulation, we are documenting not just the behavior itself, but the progression and evolution of development, with the opportunity to create eductational and entertaining content about journey of man and machine working collaboratively to gain a deeper understanding of the beauty of nature. Eventually we hope to stitch the various generation videos together and publish them for consumption by the broader public. 
+
+## Key Commands
+
+### Build & Run
+```bash
+cargo run
+```
+
+### Video Processing
+```bash
+# Convert captured PNG frames to MP4 video
+./ffmpeg/ffmpeg-2025-08-20-git-4d7c609be3-full_build/bin/ffmpeg.exe -framerate 30 -i "simulation_videos/test_XXX_TIMESTAMP_frames/frame_%04d.png" -c:v libx264 -pix_fmt yuv420p "simulation_videos/test_XXX_TIMESTAMP.mp4"
+```
+
+### Testing & Validation
+```bash
+# No specific test framework configured yet
+# Manual testing via simulation runs
+```
+
+## Architecture Overview
+
+### Core Modules
+- **main.rs** - Bevy app setup, ECS system registration
+- **components.rs** - Entity component definitions (AntState, FoodSource, Nest, etc.)
+- **systems.rs** - ECS systems for movement, sensing, pheromone updates, performance tracking
+- **pheromones.rs** - Pheromone grid simulation and decay logic
+- **video.rs** - Real-time frame capture with actual pheromone trail visualization
+- **colors.rs** - Unified color configuration for consistent simulation/video rendering
+- **config.rs** - Simulation parameters and configuration
+
+### Key Systems
+1. **Ant Behavior Systems**: sensing_system, movement_system, food_collection_system
+2. **Pheromone Systems**: pheromone_deposit_system, pheromone_update_system
+3. **Visual Systems**: ant_visual_system, food_visual_system, update_pheromone_visualization
+4. **Performance Systems**: performance_analysis_system, exit_system
+5. **Video System**: video_recording_system with real pheromone data capture
+
+## Important Implementation Details
+
+### Pheromone Trail Visualization
+- **Real pheromone data**: Video capture uses actual PheromoneGrid data, not artificial gradients
+- **Color scheme**: Green = food pheromones, Blue = nest pheromones (consistent between simulation and video)
+- **Coordinate mapping**: Grid-to-screen transformation for accurate visualization
+
+### Video Recording
+- **Immediate start**: Recording begins at simulation start (0 seconds)
+- **Duration**: 5 minutes (300 seconds) for comprehensive behavior capture
+- **Frame rate**: 30 fps capture, every 6th frame saved for 5-second final video (6x speed)
+- **Format**: PNG frames → FFmpeg H.264 MP4 conversion
+- **Resolution**: 406x720 (mobile-friendly aspect ratio)
+
+### Performance Tracking
+- **Metrics**: Deliveries per minute, average return time, oscillation detection
+- **Auto-exit conditions**: High oscillation (≥20 ants) or lost carriers (≥10 ants)
+- **Success criteria**: Sustained food delivery with low return times
+
+## Current Configuration
+
+### Simulation Parameters (config.rs)
+- Initial ants: Variable based on current test setup
+- Food sources: Multiple sources placed far from nest (333-500 units away)
+- World size: 1000x1000 units
+- Pheromone grid: 1:1 mapping with world coordinates
+
+### Color Scheme (colors.rs)
+- **Nest**: Yellow (#FFFF00)
+- **Food sources**: Green (#00FF00)  
+- **Ants exploring**: Red (#FF0000)
+- **Ants carrying food**: Orange (#FF8000)
+- **Ants collecting**: Yellow (#FFFF00)
+- **Food pheromones**: Green (#00FF00)
+- **Nest pheromones**: Blue (#0000FF)
+
+## Optimization Notes
+
+### Recent Performance Improvements
+- Reduced startup timer to 5 seconds for faster food seeking
+- Challenge mode: All food sources placed far from nest (minimum 333 units)
+- Optimized pheromone trail following with hysteresis and momentum
+- Enhanced stuck detection and recovery mechanisms
+
+### Video System Improvements
+- Replaced artificial gradient backgrounds with real pheromone visualization
+- Unified color configuration between simulation and video rendering
+- Immediate recording start for complete behavior capture
+- Proper coordinate transformation and pixel mapping
+
+## Development Workflow
+
+### Making Changes
+1. Modify relevant system in src/
+2. Test with `cargo run` 
+3. Let simulation run for 5 minutes to capture video
+4. Review generated MP4 in simulation_videos/
+5. Analyze performance metrics from console output
+
+### Video Generation Workflow
+1. Simulation auto-captures frames during run
+2. Frames saved to: `simulation_videos/test_XXX_TIMESTAMP_frames/`
+3. Use FFmpeg command above to convert to MP4
+4. Final video shows real pheromone trails with scientific accuracy
+
+## Known Issues & TODOs
+
+### Planned Features
+- [ ] Text overlay on videos with generation number and change descriptions
+--- How should we store generation information for use across runs?  Should it live here in this claude.md and be updated each run? or is there a better place to store this?  Should we make a 'run history' file that lists generation number and change descriptions?
+- [ ] Automate video conversion by making a wrapper around the simulation that automatically builds the video after the simulation exits (via user kill, timeout or error)
+- [ ] New primary optimization metric: for each ant count the time it has been since its reached a goal.  Deliveries per minute is a good metric, but it can ignore ants failing badly - we want ALL ants to be acting effectively, so we will make a metric of how long since a food-seeking ant has left the nest without finding food or how long a nest-seeking ant has been looking for the nest.  We will take an averageTimeSinceGoal across all ants, and use this as the primary optimization metric to quantify the value of changes to the simulation. 
+- [ ] Previously, claude has 'cheated' by changing the parameters of the challenge to better satisfy the optimization function rather than focusing on tweaking behavior.  We need to develop a way to codify challenges in a way that clearly defines the boundaries of 'fair' changes that can be made to try to improve the function in order to focus on improving the way pheromones and ant behavior work so our optimizations will converge toward increasingly ant-like behavior. Ex. like “do not reduce food distance,” "no not reduce quantity of food", "do not allow ants to pick up food from far away", "do not let ants see the full world state outside a reasonable perceptual distance", etc.
+- [ ] simulation_videos folder is quite messy.  lets figure out a better scheme for how to store the pngs and videos, and maybe make the pngs temporary (have the wrapper clean them up?) eventually i would like to have a folder that only contains the videos in order (maybe with a four digit generation number as first characters to sort cleanly), but i appreciate the value of being able to have more info for debugging while we find our footing... so how do we get the best of both worlds?
+- [ ] Automated test framework for performance regression detection
+- [ ] Parameter optimization based on video analysis
+- [ ] Enhanced ant state visualization (directional indicators)
+
+### Current Limitations
+- No automated linting/formatting commands configured
+- Manual video conversion process (could be automated)
+- Limited performance metrics visualization in video overlay
+
+## File Structure
+```
+src/
+├── main.rs              # Bevy app setup and system registration
+├── components.rs        # ECS component definitions  
+├── systems.rs          # Core simulation logic systems
+├── pheromones.rs       # Pheromone grid and trail simulation
+├── video.rs            # Real-time video capture with pheromone visualization
+├── colors.rs           # Unified color configuration
+├── config.rs           # Simulation parameters
+├── png_test.rs         # PNG testing utilities
+└── create_test_frames.rs # Frame generation utilities
+
+simulation_videos/      # Generated video outputs and frames
+ffmpeg/                # Local FFmpeg installation for video conversion
+
+## Allow-All Policy (Repo-Scoped)
+
+**Scope:** Everything inside the repository root `antsim/` (and its subfolders).
+
+**Permission:** You may create, modify, move, rename, and delete any files/directories under `antsim/`. You may run any commands whose working directory is inside `antsim/` (including build, test, scripts, git operations). Treat `antsim/` as a fully trusted workspace. I will use git to recover if needed.
+
+**Out of Scope (ask first):**
+- Reading/writing anything **outside** `antsim/`
+- Installing/removing system packages or changing global config
+- Long-running network operations or credential/secrets access
+
+**Notes:** Keep all generated artifacts inside `antsim/` (e.g., `simulation_videos/`, `logs/`, `scripts/`).
+
+This configuration enables Claude to understand the ant colony simulation architecture, run appropriate commands, and maintain consistency in the pheromone visualization system across both real-time simulation and video recording.
+
+
+--- Can ignore for now  everything below this --- 
+
+### Future challenges and later development ideas
+- Adding obstacles to the terrain (rocks? walls?) so ants have to path around them to reach food sources effectively, optimal paths will no longer be straight
+- Adding hazards (lava? ant trap?) that kills ants that enter it, they must find a way to warn others to avoid areas where ants disappear from (i think this will require a fear pheromone...?)
+- Make ants leave the nest progressively rather than all at once
+- Allow the nest to grow new ants when sufficient food has been returned. 
+- Different kinds of food, some with greater nutritional density
+- Dueling colonies? predators? ant warfare?
+- world complexity like seasonal changes, weather effects, different terrain types, obstacle changes mid-run
+- ant role specialization, 'dances' to maintain or optimize pheromone trails
