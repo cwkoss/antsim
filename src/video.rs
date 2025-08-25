@@ -549,6 +549,10 @@ fn get_char_pattern(ch: char) -> [u8; 8] {
 }
 
 fn update_generation_info(generation_info: &GenerationInfo, performance_tracker: &PerformanceTracker) {
+    // Step 1: Archive current generation_info.json to generation_history.json
+    archive_current_generation_to_history();
+    
+    // Step 2: Update generation_info.json with new performance data
     let updated_json = serde_json::json!({
         "current_generation": generation_info.current_generation,
         "description": generation_info.description,
@@ -568,6 +572,60 @@ fn update_generation_info(generation_info: &GenerationInfo, performance_tracker:
             println!("❌ Failed to update generation_info.json: {}", e);
         } else {
             println!("✅ Updated generation_info.json with current performance metrics");
+        }
+    }
+}
+
+fn archive_current_generation_to_history() {
+    // Read current generation_history.json
+    let mut history = if let Ok(history_content) = fs::read_to_string("generation_history.json") {
+        serde_json::from_str::<serde_json::Value>(&history_content).unwrap_or_else(|_| {
+            serde_json::json!({
+                "generations": [],
+                "current_generation": 0,
+                "next_planned_improvements": []
+            })
+        })
+    } else {
+        // Create new history file if it doesn't exist
+        serde_json::json!({
+            "generations": [],
+            "current_generation": 0,
+            "next_planned_improvements": []
+        })
+    };
+    
+    // Read current generation_info.json to archive it
+    if let Ok(current_info_content) = fs::read_to_string("generation_info.json") {
+        if let Ok(current_info) = serde_json::from_str::<serde_json::Value>(&current_info_content) {
+            // Create a new generation entry for history
+            let generation_entry = serde_json::json!({
+                "generation": current_info["current_generation"],
+                "description": current_info["description"],
+                "timestamp": current_info["timestamp"],
+                "video_filename": current_info["video_filename"],
+                "performance_metrics": current_info["performance_metrics"],
+                "key_changes": [
+                    format!("Generation {} completed", current_info["current_generation"])
+                ]
+            });
+            
+            // Add to generations array
+            if let Some(generations) = history["generations"].as_array_mut() {
+                generations.push(generation_entry);
+            }
+            
+            // Update current_generation in history
+            history["current_generation"] = current_info["current_generation"].clone();
+            
+            // Write updated history
+            if let Ok(history_string) = serde_json::to_string_pretty(&history) {
+                if let Err(e) = fs::write("generation_history.json", history_string) {
+                    println!("❌ Failed to update generation_history.json: {}", e);
+                } else {
+                    println!("✅ Archived Generation {} to history", current_info["current_generation"]);
+                }
+            }
         }
     }
 }
