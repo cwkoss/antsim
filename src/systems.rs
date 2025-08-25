@@ -250,9 +250,6 @@ pub fn food_collection_system(
                 let total_return_time: f32 = performance_tracker.return_times.iter().sum();
                 performance_tracker.average_return_time = total_return_time / performance_tracker.return_times.len() as f32;
                 
-                // Calculate deliveries per minute
-                let elapsed_minutes = time.elapsed_seconds() / 60.0;
-                performance_tracker.deliveries_per_minute = performance_tracker.successful_deliveries as f32 / elapsed_minutes.max(0.1);
                 
                 // Start exploring again
                 ant.behavior_state = AntBehaviorState::Exploring;
@@ -334,8 +331,8 @@ pub fn performance_analysis_system(
         exit_writer.send(AppExit::Success);
     }
     
-    if time.elapsed_seconds() > 90.0 && performance_tracker.deliveries_per_minute >= 10.0 {
-        println!("\n🎉 SUCCESS: 90 seconds completed with {:.2} deliveries/min!", performance_tracker.deliveries_per_minute);
+    if time.elapsed_seconds() > 90.0 {
+        println!("\n🎉 SUCCESS: 90 seconds completed with {:.1}s avg goal time!", performance_tracker.average_time_since_goal);
         exit_writer.send(AppExit::Success);
     }
 }
@@ -864,13 +861,13 @@ pub fn update_debug_ui(
     
     if let Ok(mut text) = performance_text_query.get_single_mut() {
         text.sections[0].value = format!(
-            "🎯 PERFORMANCE METRICS 🎯\n\n✅ Successful Deliveries: {}\n❌ Failed Attempts: {}\n📦 Total Food Collected: {:.1}\n⏱️ Avg Delivery Time: {:.1}s\n🏠 Avg Return Time: {:.1}s\n📈 Deliveries/Min: {:.2}\n\n🚫 Stuck Ants: {}\n🔄 Oscillating Ants: {}\n🔍 Lost Ants: {}\n🍯 Lost Food Carriers: {}",
+            "🎯 PERFORMANCE METRICS 🎯\n\n⏰ Avg Time Since Goal: {:.1}s\n\n✅ Successful Deliveries: {}\n❌ Failed Attempts: {}\n📦 Total Food Collected: {:.1}\n⏱️ Avg Delivery Time: {:.1}s\n🏠 Avg Return Time: {:.1}s\n\n🚫 Stuck Ants: {}\n🔄 Oscillating Ants: {}\n🔍 Lost Ants: {}\n🍯 Lost Food Carriers: {},",
+            performance_tracker.average_time_since_goal,
             performance_tracker.successful_deliveries,
             performance_tracker.failed_attempts,
             performance_tracker.total_food_collected,
             performance_tracker.average_delivery_time,
             performance_tracker.average_return_time,
-            performance_tracker.deliveries_per_minute,
             performance_tracker.stuck_ants_count,
             performance_tracker.oscillating_ants_count,
             performance_tracker.lost_ants_count,

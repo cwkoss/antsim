@@ -297,8 +297,8 @@ fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &
     println!("📹 Saving video: {}", filename);
     println!("   Changes: {}", video_recorder.changes_description);
     println!("   Frames captured: {}", video_recorder.frames.len());
-    println!("   Final stats: {:.1} deliveries/min, {:.1}s return time", 
-        performance_tracker.deliveries_per_minute,
+    println!("   Final stats: {:.1}s avg goal time, {:.1}s return time", 
+        performance_tracker.average_time_since_goal,
         performance_tracker.average_return_time
     );
     
@@ -331,10 +331,10 @@ fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &
     // Create metadata file  
     let metadata_file = filename.replace(".mp4", "_metadata.txt");
     let metadata = format!(
-        "Test #{}\nChanges: {}\nDeliveries/min: {:.2}\nReturn time: {:.1}s\nFrames: {}\nDuration: {:.1} seconds (6x speed from entire simulation)\n",
-        video_recorder.test_number,
+        "Generation {}\nChanges: {}\nAvg Goal Time: {:.1}s\nReturn time: {:.1}s\nFrames: {}\nDuration: {:.1} seconds (6x speed from entire simulation)\n",
+        generation_info.current_generation,
         video_recorder.changes_description,
-        performance_tracker.deliveries_per_minute,
+        performance_tracker.average_time_since_goal,
         performance_tracker.average_return_time,
         video_recorder.frames.len(),
         video_recorder.frames.len() as f32 / 6.0 / 30.0 // frames / speedup / fps
@@ -402,10 +402,9 @@ fn render_text_overlay(
     let gen_text = format!("GEN {}: {}", generation_info.current_generation, generation_info.description);
     render_text_line(frame, width, &gen_text, 5, 10, [255, 255, 255]); // White text
     
-    // Line 2: Performance metrics (y = 25-30) - Primary metric first
-    let perf_text = format!("AvgGoalTime: {:.1}s | {:.1}del/min | {:.1}s ret", 
+    // Line 2: Primary metric - Average Time Since Goal
+    let perf_text = format!("AvgGoalTime: {:.1}s | {:.1}s return", 
         performance_tracker.average_time_since_goal,
-        performance_tracker.deliveries_per_minute,
         performance_tracker.average_return_time
     );
     render_text_line(frame, width, &perf_text, 5, 25, [0, 255, 255]); // Cyan text

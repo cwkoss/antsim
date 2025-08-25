@@ -18,7 +18,6 @@ pub struct PerformanceTracker {
     pub delivery_times: Vec<f32>,
     pub simulation_start_time: f32,
     pub last_delivery_time: f32,
-    pub deliveries_per_minute: f32,
     pub stuck_ants_count: u32,
     pub oscillating_ants_count: u32,
     pub lost_ants_count: u32, // Ants that never found food
@@ -128,7 +127,6 @@ impl Default for PerformanceTracker {
             delivery_times: Vec::new(),
             simulation_start_time: 0.0,
             last_delivery_time: 0.0,
-            deliveries_per_minute: 0.0,
             stuck_ants_count: 0,
             oscillating_ants_count: 0,
             lost_ants_count: 0,
