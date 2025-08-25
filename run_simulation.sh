@@ -28,7 +28,7 @@ echo "✅ Simulation completed successfully!"
 
 # Find the most recent frames directory
 echo "📹 Looking for captured frames..."
-LATEST_FRAMES=$(find simulation_videos -name "*_frames" -type d -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- | xargs basename)
+LATEST_FRAMES=$(ls -t simulation_videos/*_frames 2>/dev/null | head -1 | xargs basename)
 
 if [ -z "$LATEST_FRAMES" ]; then
     echo "❌ No frame directories found in simulation_videos/"

@@ -334,8 +334,8 @@ pub fn performance_analysis_system(
         exit_writer.send(AppExit::Success);
     }
     
-    if time.elapsed_seconds() > 300.0 && performance_tracker.deliveries_per_minute >= 10.0 {
-        println!("\n🎉 SUCCESS: 5 minutes completed with {:.2} deliveries/min!", performance_tracker.deliveries_per_minute);
+    if time.elapsed_seconds() > 90.0 && performance_tracker.deliveries_per_minute >= 10.0 {
+        println!("\n🎉 SUCCESS: 90 seconds completed with {:.2} deliveries/min!", performance_tracker.deliveries_per_minute);
         exit_writer.send(AppExit::Success);
     }
 }

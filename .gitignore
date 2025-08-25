@@ -10,3 +10,5 @@ target/
 .claude/
 
 videos/
+
+debug/

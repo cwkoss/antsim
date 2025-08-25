@@ -259,8 +259,8 @@ fn capture_placeholder_frame(video_recorder: &mut VideoRecorder) {
 fn should_save_video(performance_tracker: &PerformanceTracker, time: &Time) -> bool {
     // Save video when:
     // 1. Auto-exit conditions are met (oscillation/lost carriers)
-    // 2. Or simulation has run for 2+ minutes successfully
-    time.elapsed_seconds() > 300.0 || 
+    // 2. Or simulation has run for 90 seconds successfully
+    time.elapsed_seconds() > 90.0 || 
     performance_tracker.oscillating_ants_count >= 20 ||
     performance_tracker.lost_food_carriers_count >= 10
 }

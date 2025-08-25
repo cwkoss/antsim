@@ -100,13 +100,20 @@ cargo run
 
 ### Making Changes
 1. Modify relevant system in src/
-2. **For all attempts (even tests and debugging)**: Use `./run_simulation.ps1` (automated wrapper)
-3. Let simulation run for 5 minutes to capture video
-4. Review generated MP4 in videos/ (if using wrapper) or simulation_videos/ (if manual)
+2. **ALWAYS use the wrapper script**: `./run_simulation.sh` (Bash) or `./run_simulation.ps1` (PowerShell) 
+3. Let simulation complete its 90-second cycle and auto-convert to video
+4. Review generated MP4 in videos/ directory with updated "AvgGoalTime" overlay
 5. Analyze performance metrics from console output
 6. **Commit all changes to git at the end of every development cycle**
 
-**Note**: Use `run_simulation.ps1` (PowerShell) or `run_simulation.sh` (Bash) wrapper scripts that automatically handle video conversion and file organization. Use them for generating official generation videos. Use manual `cargo run` only for quick testing or when debugging text rendering issues.
+**IMPORTANT**: The wrapper scripts are now the standard method for ALL simulation runs. They automatically:
+- Run the 90-second simulation
+- Convert frames to MP4 with proper naming
+- Organize files into videos/ and debug/ directories
+- Update generation info
+- Display the updated video overlay with "AvgGoalTime" as primary metric
+
+**Manual `cargo run` should only be used for emergency debugging.**
 
 ### Generation Increment Rules
 **IMPORTANT**: A video MUST be generated for every development cycle, regardless of success or failure. Do not increment generation numbers until AFTER a video has been generated AND properly saved. The generation number should only be updated once we have confirmed:
