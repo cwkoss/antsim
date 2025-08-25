@@ -1,51 +1,13 @@
 {
-  "current_generation": 8,
-  "description": "Automated run with averageTimeSinceGoal metric and video overlay",
-  "timestamp": "2025-08-25T19:35:40Z",
-  "video_filename": "generation_5_failed_optimization.mp4",
+  "current_generation": 15,
+  "description": "Focus optimization on average time since goal metric only",
   "performance_metrics": {
-    "deliveries_per_minute": 0.4,
-    "average_return_time_seconds": 9.7,
-    "average_time_since_goal_seconds": null,
-    "simulation_duration_seconds": 300,
-    "target_frames": 500,
-    "frames_captured": 1,
-    "baseline_performance": 18.8,
-    "performance_degradation": "97.9%"
+    "average_return_time_seconds": 5.922771453857422,
+    "average_time_since_goal_seconds": 62.48197937011719,
+    "simulation_duration_seconds": 90,
+    "successful_deliveries": 66,
+    "total_food_collected": 68.0
   },
-  "attempted_optimizations": [
-    "Round 1: Enhanced pheromone trail following sensitivity with gradient calculations",
-    "Round 2: Improved stuck detection and recovery with 3-level intervention system", 
-    "Round 3: Better exploration vs exploitation balance with pheromone awareness",
-    "Round 4: Enhanced goal state transitions with immediate nest orientation",
-    "Round 5: Optimized movement and pathfinding with quality-based speed adjustments"
-  ],
-  "failure_analysis": [
-    "Overly aggressive optimization broke core ant behavior systems",
-    "Complex gradient calculations and trail quality assessments disrupted natural exploration",
-    "Enhanced hysteresis and memory systems caused decision paralysis",  
-    "Reduced startup timer (3s vs 5s) prevented proper behavior initialization",
-    "Multiple competing optimization systems created behavioral conflicts"
-  ],
-  "lessons_learned": [
-    "Small incremental changes are safer than comprehensive overhauls",
-    "Biological plausibility constraints exist for good reasons",
-    "Complex optimization systems can interfere with each other",
-    "Simple exploration behavior was already reasonably effective",
-    "Performance metrics can mislead - need to validate actual ant behavior"
-  ],
-  "recovery_actions": [
-    "Reverted all aggressive optimizations to restore basic functionality",
-    "Simplified sensing system to basic exploration-only behavior", 
-    "Removed complex gradient calculations and trail following algorithms",
-    "Restored startup timer to 5.0 seconds for proper initialization",
-    "Confirmed system stability - no more infinite restart loops"
-  ],
-  "next_planned_improvements": [
-    "Take conservative approach with single small optimizations",
-    "Test each change thoroughly before adding more complexity",
-    "Focus on maintaining stable baseline behavior while making targeted improvements",
-    "Consider Generation 4 (18.8 deliveries/min) as the current working baseline",
-    "Implement gentle pheromone following without disrupting exploration"
-  ]
+  "timestamp": "2025-08-25T22:56:36Z",
+  "video_filename": "0014_focus_optimization_on_average_time_since_goal_metric_only.mp4"
 }

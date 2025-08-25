@@ -90,7 +90,7 @@ if [ -f "generation_info.json" ]; then
     # Simple sed replacement (not as robust as PowerShell version)
     sed -i "s/\"current_generation\": $CURRENT_GEN/\"current_generation\": $NEW_GEN/" generation_info.json
     sed -i "s/\"timestamp\": \"[^\"]*\"/\"timestamp\": \"$TIMESTAMP\"/" generation_info.json
-    sed -i "s/\"description\": \"[^\"]*\"/\"description\": \"Automated run with averageTimeSinceGoal metric and video overlay\"/" generation_info.json
+    # Description is now managed by the simulation itself
     
     echo "✅ Generation incremented to $NEW_GEN"
 else

@@ -84,10 +84,17 @@ cargo run
 
 ## Optimization Notes
 
-### Recent Performance Improvements
+### Recent Performance Improvements (Generations 11-15)
+- **Pheromone-Guided Behavior**: Implemented sophisticated trail following system with 8-directional sensing
+- **Momentum-Based Movement**: Added directional bias (0.6 momentum bonus) to prevent oscillation and zigzag behavior  
+- **Separation of Concerns**: Food-carrying ants use direct nest navigation, exploring ants follow pheromone trails
+- **Continuous Trail Deposition**: Fixed dashed pheromone trails by depositing along movement paths
+- **Realistic Movement Speeds**: Reduced speeds to 50-65 units/second for natural, continuous motion
+- **Best Performance**: Generation 13 achieved 28.5s average time since goal (63% improvement over baseline)
+
+### Legacy Improvements (Pre-Generation 11)
 - Reduced startup timer to 5 seconds for faster food seeking
 - Challenge mode: All food sources placed far from nest (minimum 333 units)
-- Optimized pheromone trail following with hysteresis and momentum
 - Enhanced stuck detection and recovery mechanisms
 
 ### Video System Improvements
@@ -96,7 +103,7 @@ cargo run
 - Immediate recording start for complete behavior capture
 - Proper coordinate transformation and pixel mapping\n- **Video Naming Convention**: Fixed to use established pattern `####_description.mp4` (e.g., 0007_codebase_cleanup_generation.mp4)\n- **Cleanup**: Removed debug output and unused modules for cleaner console output
 
-### Current Status (Generation 7)\n- **Latest Video**: 0007_codebase_cleanup_generation.mp4\n- **Performance**: 33.6 deliveries/min, 4.0s average return time\n- **System State**: Stable baseline with clean codebase ready for optimization\n- **Video Naming**: Now follows proper convention (####_description.mp4)\n\n## Development Workflow
+### Current Status (Generation 15)\n- **Latest Video**: 0014_focus_optimization_on_average_time_since_goal_metric_only.mp4\n- **Performance**: 62.5s average time since goal, 5.9s return time, 66 deliveries\n- **Best Achievement**: Generation 13 reached 28.5s average time since goal (116 deliveries)\n- **System State**: Advanced pheromone-guided behavior with realistic movement speeds\n- **Video Naming**: Established pattern (####_description.mp4)\n\n## Development Workflow
 
 ### Making Changes
 1. Modify relevant system in src/
@@ -165,9 +172,16 @@ cargo run
 --- Is the simulation artificially slowed with timeouts or tick rates?  If so, I want to remove this limitation when the user presses T and run at "Turbo" mode - as fast as the processor will allow
 
 ### Current Limitations
-- No automated linting/formatting commands configured
-- Manual video conversion process (could be automated)
-- Limited performance metrics visualization in video overlay
+- No automated linting/formatting commands configured  
+- Text rendering still shows boxes instead of emoji characters in video overlay
+- Performance trade-off: realistic movement vs optimization metrics (currently prioritizing realism)
+
+### Recent Technical Achievements (Generation 11-15)
+- ✅ **Advanced Pheromone System**: 8-directional sensing with momentum-based trail following
+- ✅ **Continuous Trail Rendering**: Eliminated dashed pheromone trails through path-based deposition  
+- ✅ **Behavioral Separation**: Smart context-aware navigation (direct vs trail-following)
+- ✅ **Realistic Motion**: Smooth, natural ant movement at biologically-inspired speeds
+- ✅ **Performance Breakthrough**: 63% improvement in goal achievement times (Generation 13)
 
 ## File Structure
 ```

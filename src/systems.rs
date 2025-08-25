@@ -21,48 +21,81 @@ pub fn sensing_system(
             ant.sensing_timer -= delta_time;
             ant.startup_timer -= delta_time;
             
-            // Don't process ants that are collecting food
-            if ant.food_collection_timer > 0.0 {
+            // Don't process ants that are collecting food or still in startup
+            if ant.food_collection_timer > 0.0 || ant.startup_timer > 0.0 {
                 continue;
             }
             
-            // Simple exploration behavior for all states
-            match ant.behavior_state {
-                AntBehaviorState::Exploring => {
-                    if ant.sensing_timer <= 0.0 {
-                        // Random direction changes for exploration
-                        if rand::random::<f32>() < 0.1 * delta_time {
-                            let angle_change = (rand::random::<f32>() - 0.5) * 1.0;
-                            ant.current_direction += angle_change;
-                            velocity.x = ant.current_direction.cos() * 100.0;
-                            velocity.y = ant.current_direction.sin() * 100.0;
-                        }
-                        ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
-                    }
-                },
+            // For carrying food: use simple nest-seeking behavior to avoid pheromone confusion
+            if ant.carrying_food {
+                // Simple direct navigation to nest when carrying food
+                let nest_pos = Vec2::ZERO; // Nest is at origin
+                let to_nest = nest_pos - Vec2::new(pos.x, pos.y);
+                let distance_to_nest = to_nest.length();
                 
-                AntBehaviorState::Sensing => {
-                    // Simple sensing - just continue exploring
-                    ant.behavior_state = AntBehaviorState::Exploring;
-                    ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
-                },
-                
-                AntBehaviorState::Following => {
-                    // Simple following - just continue exploring
-                    ant.behavior_state = AntBehaviorState::Exploring;
-                    ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
-                },
-                
-                AntBehaviorState::Tracking => {
-                    // Simple tracking - just continue exploring
-                    ant.behavior_state = AntBehaviorState::Exploring;
-                    ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.5;
+                if distance_to_nest > 10.0 {
+                    let nest_direction = to_nest.normalize();
+                    ant.current_direction = nest_direction.y.atan2(nest_direction.x);
+                    velocity.x = nest_direction.x * 60.0;  // Reduced from 100 to 60
+                    velocity.y = nest_direction.y * 60.0;
+                    ant.behavior_state = AntBehaviorState::Following;
                 }
-            }
-            
-            // Update current direction based on velocity
-            if velocity.x.abs() > 0.1 || velocity.y.abs() > 0.1 {
-                ant.current_direction = velocity.y.atan2(velocity.x);
+                ant.sensing_timer = 0.5;
+            } else {
+                // For exploring ants: use pheromone trails to find food with momentum bias
+                let pheromone_readings = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food);
+                let mut best_direction = ant.current_direction;
+                let mut max_pheromone = 0.0;
+                let mut found_trail = false;
+                
+                // Add momentum bias - prefer directions close to current direction
+                for (i, &pheromone_strength) in pheromone_readings.iter().enumerate() {
+                    if pheromone_strength > 0.15 {
+                        let angle = (i as f32) * std::f32::consts::TAU / 8.0;
+                        
+                        // Calculate momentum bonus based on alignment with current direction
+                        let angle_diff = (angle - ant.current_direction).abs();
+                        let angle_diff_normalized = if angle_diff > std::f32::consts::PI { 
+                            std::f32::consts::TAU - angle_diff 
+                        } else { 
+                            angle_diff 
+                        };
+                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.6; // Increased from 0.3 to 0.6
+                        let effective_strength = pheromone_strength + momentum_bonus;
+                        
+                        if effective_strength > max_pheromone {
+                            max_pheromone = effective_strength;
+                            best_direction = angle;
+                            found_trail = true;
+                        }
+                    }
+                }
+                
+                if found_trail && max_pheromone > 0.2 {
+                    // Smooth direction change for trail following
+                    ant.behavior_state = AntBehaviorState::Following;
+                    let angle_diff = best_direction - ant.current_direction;
+                    let smooth_angle_change = if angle_diff.abs() > std::f32::consts::PI {
+                        if angle_diff > 0.0 { angle_diff - std::f32::consts::TAU } else { angle_diff + std::f32::consts::TAU }
+                    } else { angle_diff };
+                    
+                    // Gradual direction adjustment instead of immediate snap
+                    ant.current_direction += smooth_angle_change * 0.4; // Reduced from 0.6 to 0.4 for smoother turns
+                    velocity.x = ant.current_direction.cos() * 65.0;  // Reduced from 110 to 65
+                    velocity.y = ant.current_direction.sin() * 65.0;
+                    ant.sensing_timer = 0.5;
+                } else {
+                    // No trail found - random exploration
+                    ant.behavior_state = AntBehaviorState::Exploring;
+                    
+                    if ant.sensing_timer <= 0.0 {
+                        let angle_change = (rand::random::<f32>() - 0.5) * 1.0;
+                        ant.current_direction += angle_change;
+                        velocity.x = ant.current_direction.cos() * 50.0;  // Reduced from 85 to 50
+                        velocity.y = ant.current_direction.sin() * 50.0;
+                        ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.8;
+                    }
+                }
             }
             
             // Basic stuck detection
@@ -71,12 +104,13 @@ pub fn sensing_system(
             
             if distance_moved < 5.0 {
                 ant.stuck_timer += delta_time;
-                if ant.stuck_timer > 3.0 {
-                    // Simple stuck recovery
+                if ant.stuck_timer > 2.0 {
+                    // Randomize direction when stuck
                     ant.current_direction = rand::random::<f32>() * std::f32::consts::TAU;
-                    velocity.x = ant.current_direction.cos() * 100.0;
-                    velocity.y = ant.current_direction.sin() * 100.0;
+                    velocity.x = ant.current_direction.cos() * 60.0;   // Reduced from 100 to 60
+                    velocity.y = ant.current_direction.sin() * 60.0;
                     ant.stuck_timer = 0.0;
+                    ant.behavior_state = AntBehaviorState::Exploring;
                 }
             } else {
                 ant.stuck_timer = 0.0;
@@ -119,31 +153,59 @@ pub fn pheromone_deposit_system(
 ) {
     if let Some(ref mut grid) = pheromone_grid {
         for (transform, ant) in ants.iter() {
-            let pos = transform.translation;
+            let current_pos = transform.translation;
+            let last_pos = Vec3::new(ant.last_position.x, ant.last_position.y, 0.0);
             
-            if ant.carrying_food {
-                // Lay food trail when returning to nest
-                let decay_factor = (-ant.distance_from_food * 0.005).exp();
-                let deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
+            // Calculate distance moved this frame
+            let movement_distance = current_pos.distance(last_pos);
+            
+            // Deposit pheromones along the path if ant moved significantly
+            if movement_distance > 0.5 {
+                // Number of deposits based on distance moved (ensure continuous trail)
+                let num_deposits = (movement_distance / 0.8).ceil() as i32;
                 
-                grid.deposit(
-                    pos.x, 
-                    pos.y, 
-                    PheromoneType::Food, 
-                    deposit_amount
-                );
-                
+                for i in 0..=num_deposits {
+                    let t = if num_deposits > 0 { i as f32 / num_deposits as f32 } else { 0.0 };
+                    let deposit_pos = last_pos.lerp(current_pos, t);
+                    
+                    if ant.carrying_food {
+                        // Lay food trail when returning to nest
+                        let decay_factor = (-ant.distance_from_food * 0.005).exp();
+                        let deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
+                        
+                        grid.deposit(
+                            deposit_pos.x, 
+                            deposit_pos.y, 
+                            PheromoneType::Food, 
+                            deposit_amount / (num_deposits + 1) as f32 // Distribute amount across deposits
+                        );
+                        
+                    } else {
+                        // Lay nest trail when exploring
+                        let decay_factor = (-ant.distance_from_nest * 0.003).exp();
+                        let deposit_amount = config.lay_rate_nest * decay_factor;
+                        
+                        grid.deposit(
+                            deposit_pos.x, 
+                            deposit_pos.y, 
+                            PheromoneType::Nest, 
+                            deposit_amount / (num_deposits + 1) as f32 // Distribute amount across deposits
+                        );
+                    }
+                }
             } else {
-                // Lay nest trail when exploring
-                let decay_factor = (-ant.distance_from_nest * 0.003).exp();
-                let deposit_amount = config.lay_rate_nest * decay_factor;
-                
-                grid.deposit(
-                    pos.x, 
-                    pos.y, 
-                    PheromoneType::Nest, 
-                    deposit_amount
-                );
+                // For very small movements, just deposit at current position
+                if ant.carrying_food {
+                    let decay_factor = (-ant.distance_from_food * 0.005).exp();
+                    let deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
+                    
+                    grid.deposit(current_pos.x, current_pos.y, PheromoneType::Food, deposit_amount);
+                } else {
+                    let decay_factor = (-ant.distance_from_nest * 0.003).exp();
+                    let deposit_amount = config.lay_rate_nest * decay_factor;
+                    
+                    grid.deposit(current_pos.x, current_pos.y, PheromoneType::Nest, deposit_amount);
+                }
             }
         }
     }
