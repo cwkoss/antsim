@@ -8,8 +8,7 @@ bevy = "0.14"
 rand = "0.8"
 rayon = "1.8"
 noise = "0.9"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }\nserde_json = "1.0"
 # Video recording dependencies (lightweight)
 chrono = "0.4"
 png = "0.17"

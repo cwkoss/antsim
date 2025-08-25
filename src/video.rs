@@ -346,6 +346,9 @@ fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &
         println!("✅ Video metadata saved: {}", metadata_file);
     }
     
+    // Update generation_info.json with current performance metrics
+    update_generation_info(generation_info, performance_tracker);
+    
     // Clear frames for next test
     video_recorder.frames.clear();
     video_recorder.test_number += 1;
@@ -542,5 +545,29 @@ fn get_char_pattern(ch: char) -> [u8; 8] {
         '9' => [0b011110, 0b100001, 0b100001, 0b011111, 0b000001, 0b000001, 0b011110, 0b000000],
         // Default for unknown characters - show a small box
         _ => [0b111111, 0b100001, 0b100001, 0b100001, 0b100001, 0b100001, 0b111111, 0b000000],
+    }
+}
+
+fn update_generation_info(generation_info: &GenerationInfo, performance_tracker: &PerformanceTracker) {
+    let updated_json = serde_json::json!({
+        "current_generation": generation_info.current_generation,
+        "description": generation_info.description,
+        "timestamp": chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+        "video_filename": format!("{:04}_{}.mp4", generation_info.current_generation, generation_info.description.replace(" ", "_").to_lowercase()),
+        "performance_metrics": {
+            "average_time_since_goal_seconds": performance_tracker.average_time_since_goal,
+            "average_return_time_seconds": performance_tracker.average_return_time,
+            "successful_deliveries": performance_tracker.successful_deliveries,
+            "simulation_duration_seconds": 90,
+            "total_food_collected": performance_tracker.total_food_collected
+        }
+    });
+    
+    if let Ok(json_string) = serde_json::to_string_pretty(&updated_json) {
+        if let Err(e) = fs::write("generation_info.json", json_string) {
+            println!("❌ Failed to update generation_info.json: {}", e);
+        } else {
+            println!("✅ Updated generation_info.json with current performance metrics");
+        }
     }
 }

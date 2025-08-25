@@ -189,6 +189,7 @@ dependencies = [
  "rand",
  "rayon",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
