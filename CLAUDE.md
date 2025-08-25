@@ -94,9 +94,9 @@ cargo run
 - Replaced artificial gradient backgrounds with real pheromone visualization
 - Unified color configuration between simulation and video rendering
 - Immediate recording start for complete behavior capture
-- Proper coordinate transformation and pixel mapping
+- Proper coordinate transformation and pixel mapping\n- **Video Naming Convention**: Fixed to use established pattern `####_description.mp4` (e.g., 0007_codebase_cleanup_generation.mp4)\n- **Cleanup**: Removed debug output and unused modules for cleaner console output
 
-## Development Workflow
+### Current Status (Generation 7)\n- **Latest Video**: 0007_codebase_cleanup_generation.mp4\n- **Performance**: 33.6 deliveries/min, 4.0s average return time\n- **System State**: Stable baseline with clean codebase ready for optimization\n- **Video Naming**: Now follows proper convention (####_description.mp4)\n\n## Development Workflow
 
 ### Making Changes
 1. Modify relevant system in src/
