@@ -26,9 +26,13 @@ if ! cargo run; then
 fi
 echo "✅ Simulation completed successfully!"
 
-# Find the most recent frames directory
+# Find the most recent frames directory (by modification time)
 echo "📹 Looking for captured frames..."
-LATEST_FRAMES=$(ls -t simulation_videos/*_frames 2>/dev/null | head -1 | xargs basename)
+LATEST_FRAMES=$(find simulation_videos -name "*_frames" -type d -printf "%T@ %f\n" 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2)
+if [ -z "$LATEST_FRAMES" ]; then
+    # Fallback for systems without -printf support
+    LATEST_FRAMES=$(ls -t simulation_videos/*_frames 2>/dev/null | head -1 | xargs basename 2>/dev/null)
+fi
 
 if [ -z "$LATEST_FRAMES" ]; then
     echo "❌ No frame directories found in simulation_videos/"
@@ -40,25 +44,26 @@ VIDEO_NAME=${LATEST_FRAMES%_frames}
 
 echo "🎬 Found frames: $LATEST_FRAMES"
 
-# Convert frames to video
+# Convert frames to video - fix Windows path issues in Git Bash
 echo "🔄 Converting frames to MP4..."
-FFMPEG_PATH="./ffmpeg/ffmpeg-2025-08-20-git-4d7c609be3-full_build/bin/ffmpeg.exe"
-INPUT_PATTERN="simulation_videos/$LATEST_FRAMES/frame_%04d.png"
-OUTPUT_PATH="simulation_videos/$VIDEO_NAME.mp4"
+cd simulation_videos
+FFMPEG_PATH="../ffmpeg/ffmpeg-2025-08-20-git-4d7c609be3-full_build/bin/ffmpeg.exe"
 
-if ! "$FFMPEG_PATH" -framerate 30 -i "$INPUT_PATTERN" -c:v libx264 -pix_fmt yuv420p -y "$OUTPUT_PATH"; then
+if ! "$FFMPEG_PATH" -framerate 30 -i "${LATEST_FRAMES}/frame_%04d.png" -c:v libx264 -pix_fmt yuv420p -y "${VIDEO_NAME}.mp4"; then
     echo "❌ Video conversion failed"
+    cd ..
     read -p "Press Enter to exit"
     exit 1
 fi
-echo "✅ Video created: $OUTPUT_PATH"
+cd ..
+echo "✅ Video created: simulation_videos/${VIDEO_NAME}.mp4"
 
 # Organize files
 echo "📁 Organizing files..."
 
 # Move video to videos/ directory
 FINAL_VIDEO_PATH="videos/$VIDEO_NAME.mp4"
-mv "$OUTPUT_PATH" "$FINAL_VIDEO_PATH"
+mv "simulation_videos/${VIDEO_NAME}.mp4" "$FINAL_VIDEO_PATH"
 
 # Move frames to debug/ directory
 DEBUG_FRAMES_PATH="debug/$LATEST_FRAMES"

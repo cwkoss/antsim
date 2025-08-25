@@ -100,18 +100,18 @@ cargo run
 
 ### Making Changes
 1. Modify relevant system in src/
-2. **ALWAYS use the wrapper script**: `./run_simulation.sh` (Bash) or `./run_simulation.ps1` (PowerShell) 
+2. **ALWAYS use the wrapper script**: `./run_simulation.sh` (requires Git Bash on Windows)
 3. Let simulation complete its 90-second cycle and auto-convert to video
 4. Review generated MP4 in videos/ directory with updated "AvgGoalTime" overlay
 5. Analyze performance metrics from console output
 6. **Commit all changes to git at the end of every development cycle**
 
-**IMPORTANT**: The wrapper scripts are now the standard method for ALL simulation runs. They automatically:
-- Run the 90-second simulation
-- Convert frames to MP4 with proper naming
-- Organize files into videos/ and debug/ directories
-- Update generation info
-- Display the updated video overlay with "AvgGoalTime" as primary metric
+**IMPORTANT**: The bash wrapper script is now the standard method for ALL simulation runs. It automatically:
+- Runs the 90-second simulation
+- Converts frames to MP4 with proper naming (fixed for Windows/Git Bash compatibility)
+- Organizes files into videos/ and debug/ directories
+- Updates generation info
+- Displays the updated video overlay with "AvgGoalTime" as primary metric
 
 **Manual `cargo run` should only be used for emergency debugging.**
 

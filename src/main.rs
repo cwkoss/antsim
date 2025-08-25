@@ -62,7 +62,7 @@ fn main() {
                 update_debug_ui,
             ).chain()
         )
-        .add_systems(Update, video_recording_system)
+        .add_systems(Update, video_recording_system.after(performance_analysis_system))
         .run();
 }
 

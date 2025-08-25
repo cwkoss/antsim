@@ -38,6 +38,11 @@ pub fn video_recording_system(
         // Create visual frame with actual simulation data (capture whole simulation)
         capture_simulation_frame(&mut video_recorder, &performance_tracker, &generation_info, time.elapsed_seconds(), 
                                &pheromone_grid, &color_config, &ant_query, &food_query, &nest_query);
+        
+        // Debug: Print frame count periodically
+        if video_recorder.frames.len() % 60 == 0 {
+            println!("📹 Captured {} frames at {:.1}s", video_recorder.frames.len(), time.elapsed_seconds());
+        }
     }
     
     // Check if simulation is ending and should save video
@@ -257,12 +262,20 @@ fn capture_placeholder_frame(video_recorder: &mut VideoRecorder) {
 }
 
 fn should_save_video(performance_tracker: &PerformanceTracker, time: &Time) -> bool {
-    // Save video when:
-    // 1. Auto-exit conditions are met (oscillation/lost carriers)
-    // 2. Or simulation has run for 90 seconds successfully
-    time.elapsed_seconds() > 90.0 || 
-    performance_tracker.oscillating_ants_count >= 20 ||
-    performance_tracker.lost_food_carriers_count >= 10
+    // TEMPORARY DEBUG: Only save after 90 seconds - disable all early exit conditions
+    let elapsed = time.elapsed_seconds();
+    let time_condition = elapsed > 90.0;
+    
+    if time_condition {
+        println!("🎬 Video save triggered: 90 seconds elapsed ({:.1}s), frames: {}", elapsed, performance_tracker.successful_deliveries); // Use any field for frame count debug
+    }
+    
+    // Print periodic status to debug what's happening
+    if elapsed > 0.0 && (elapsed as u32) % 10 == 0 && elapsed.fract() < 0.1 {
+        println!("📊 Status at {:.0}s: oscillating={}, lost_carriers={}", elapsed, performance_tracker.oscillating_ants_count, performance_tracker.lost_food_carriers_count);
+    }
+    
+    time_condition // Only save after 90 seconds
 }
 
 fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &PerformanceTracker) {
