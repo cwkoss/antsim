@@ -1,7 +1,7 @@
 {
-  "current_generation": 11,
+  "current_generation": 7,
   "description": "Automated run with averageTimeSinceGoal metric and video overlay",
-  "timestamp": "2025-08-25T18:48:59Z",
+  "timestamp": "2025-08-25T19:03:45Z",
   "video_filename": "generation_5_failed_optimization.mp4",
   "performance_metrics": {
     "deliveries_per_minute": 0.4,

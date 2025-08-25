@@ -5,8 +5,6 @@ mod systems;
 mod pheromones;
 mod config;
 mod video;
-mod png_test;
-mod create_test_frames;
 mod colors;
 
 use components::*;
@@ -14,8 +12,6 @@ use systems::*;
 use config::*;
 use pheromones::*;
 use video::*;
-use png_test::*;
-use create_test_frames::*;
 use colors::*;
 
 fn main() {

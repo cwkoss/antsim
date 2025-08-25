@@ -47,7 +47,7 @@ pub fn video_recording_system(
     
     // Check if simulation is ending and should save video
     if should_save_video(&performance_tracker, &time) && video_recorder.is_recording {
-        save_video_on_exit(&mut video_recorder, &performance_tracker);
+        save_video_on_exit(&mut video_recorder, &performance_tracker, &generation_info);
         video_recorder.is_recording = false;
     }
 }
@@ -278,7 +278,7 @@ fn should_save_video(performance_tracker: &PerformanceTracker, time: &Time) -> b
     time_condition // Only save after 90 seconds
 }
 
-fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &PerformanceTracker) {
+fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &PerformanceTracker, generation_info: &GenerationInfo) {
     // Create videos directory if it doesn't exist
     let videos_dir = "simulation_videos";
     if let Err(e) = fs::create_dir_all(videos_dir) {
@@ -286,15 +286,12 @@ fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &
         return;
     }
     
-    // Generate filename with timestamp and test info
-    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    // Generate filename following convention: ####_description.mp4
     let filename = format!(
-        "{}/test_{:03}_{}_deliveries_{:.1}_return_{:.1}s.mp4",
+        "{}/{:04}_{}.mp4",
         videos_dir,
-        video_recorder.test_number,
-        timestamp,
-        performance_tracker.deliveries_per_minute,
-        performance_tracker.average_return_time
+        generation_info.current_generation,
+        generation_info.description.replace(" ", "_").to_lowercase()
     );
     
     println!("📹 Saving video: {}", filename);
@@ -327,18 +324,8 @@ fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &
             video_recorder.frame_width * video_recorder.frame_height * 4
         );
         
-        // Try to save as actual PNG image
-        if let Err(e) = save_frame_as_png(&frame_path, frame, video_recorder.frame_width, video_recorder.frame_height) {
-            println!("❌ Failed to save frame {} as PNG: {}", i, e);
-            // Fallback to text file with frame info
-            let fallback_path = format!("{}/frame_{:04}.txt", frames_dir, i);
-            let frame_info = format!("Frame {}: {} bytes captured\nError: {}", i, frame.len(), e);
-            if let Err(e2) = fs::write(&fallback_path, frame_info) {
-                println!("❌ Failed to save fallback info for frame {}: {}", i, e2);
-            }
-        } else {
-            println!("✅ Saved frame {} as PNG: {}", i, frame_path);
-        }
+        // Save as PNG image
+        let _ = save_frame_as_png(&frame_path, frame, video_recorder.frame_width, video_recorder.frame_height);
     }
     
     // Create metadata file  
@@ -388,23 +375,15 @@ fn save_frame_as_png(
         ).into());
     }
 
-    // Create file
-    println!("🔍 Creating PNG file: {}", path);
     let file = std::fs::File::create(path)?;
     let ref mut w = BufWriter::new(file);
 
-    println!("🔍 Setting up PNG encoder...");
     let mut encoder = png::Encoder::new(w, width, height);
     encoder.set_color(ColorType::Rgba);
     encoder.set_depth(png::BitDepth::Eight);
     
-    println!("🔍 Writing PNG header...");
     let mut writer = encoder.write_header()?;
-    
-    println!("🔍 Writing PNG image data...");
     writer.write_image_data(frame_data)?;
-    
-    println!("✅ PNG saved successfully: {}", path);
     Ok(())
 }
 
