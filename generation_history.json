@@ -1,5 +1,5 @@
 {
-  "current_generation": 37,
+  "current_generation": 40,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -542,6 +542,54 @@
       },
       "timestamp": "2025-08-26T05:38:41Z",
       "video_filename": "0036_enhanced_pheromone_sensitivity.mp4"
+    },
+    {
+      "description": "Enhanced trail diffusion: food diffusion 0.08 to 0.12",
+      "generation": 38,
+      "key_changes": [
+        "Generation 38 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.806215286254883,
+        "average_time_since_goal_seconds": 48.66523742675781,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 72,
+        "total_food_collected": 83.0
+      },
+      "timestamp": "2025-08-26T05:40:41Z",
+      "video_filename": "0037_ultra-sensitive_trail_detection.mp4"
+    },
+    {
+      "description": "Fine-tuned trail persistence: 0.2 to 0.22",
+      "generation": 39,
+      "key_changes": [
+        "Generation 39 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.336134910583496,
+        "average_time_since_goal_seconds": 39.47125625610352,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 101,
+        "total_food_collected": 114.0
+      },
+      "timestamp": "2025-08-26T05:43:03Z",
+      "video_filename": "0038_enhanced_trail_diffusion.mp4"
+    },
+    {
+      "description": "Longer-lasting trails: evap_food 0.00015 to 0.00012",
+      "generation": 40,
+      "key_changes": [
+        "Generation 40 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.549729824066162,
+        "average_time_since_goal_seconds": 45.0662841796875,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 88,
+        "total_food_collected": 90.0
+      },
+      "timestamp": "2025-08-26T05:45:03Z",
+      "video_filename": "0039_fine-tuned_trail_persistence.mp4"
     }
   ],
   "next_planned_improvements": [

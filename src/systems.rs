@@ -111,7 +111,7 @@ pub fn sensing_system(
                         
                         // Additional persistence bonus if ant has been following trails successfully
                         let persistence_bonus = if ant.behavior_state == AntBehaviorState::Following {
-                            0.2 // Extra bias to continue following if already on a trail
+                            0.2 // Back to successful Generation 37/39 value
                         } else {
                             0.0
                         };

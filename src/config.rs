@@ -31,10 +31,10 @@ impl Default for SimConfig {
             initial_ants: 50,       // Back to original 50 ants  
             food_sources: 10,       // Back to original 10 food sources - no cheating!
             
-            evap_food: 0.00015,     // OPTIMIZATION 2: Slower decay = longer trails
+            evap_food: 0.00012,     // Slightly slower decay for longer-lasting trails
             evap_nest: 0.0005,      // REVERTED: Slower nest decay - provides essential navigation 
             evap_alarm: 0.01,
-            diff_food: 0.08,        // OPTIMIZATION 2: More diffusion = easier trail detection  
+            diff_food: 0.12,        // Increased diffusion for even easier trail detection  
             diff_nest: 0.05,        // OPTIMIZATION 2: More nest diffusion
             diff_alarm: 0.2,
             
@@ -43,7 +43,7 @@ impl Default for SimConfig {
             lay_rate_food: 40.0,    // OPTIMIZATION 3: Doubled initial pheromone deposition
             lay_rate_nest: 50.0,    // OPTIMIZATION 3: Doubled nest pheromone deposition
             food_quality_weight: 1.0,
-            detection_threshold: 0.0005, // Reduced for more sensitive trail detection
+            detection_threshold: 0.001,  // Back to Generation 37 value
             saturation_limit: 10.0,
         }
     }

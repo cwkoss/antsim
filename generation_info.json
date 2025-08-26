@@ -1,13 +1,13 @@
 {
-  "current_generation": 38,
-  "description": "Ultra-sensitive trail detection",
+  "current_generation": 41,
+  "description": "Longer-lasting trails",
   "performance_metrics": {
-    "average_return_time_seconds": 5.806215286254883,
-    "average_time_since_goal_seconds": 48.66523742675781,
+    "average_return_time_seconds": 6.07189416885376,
+    "average_time_since_goal_seconds": 77.28699493408203,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 72,
-    "total_food_collected": 83.0
+    "successful_deliveries": 63,
+    "total_food_collected": 65.0
   },
-  "timestamp": "2025-08-26T05:40:41Z",
-  "video_filename": "0037_ultra-sensitive_trail_detection.mp4"
+  "timestamp": "2025-08-26T05:47:06Z",
+  "video_filename": "0040_longer-lasting_trails.mp4"
 }
