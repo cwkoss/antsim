@@ -107,18 +107,18 @@ pub fn sensing_system(
                         } else { 
                             angle_diff 
                         };
-                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.8; // Strong momentum to reduce path bouncing
+                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.9; // Very strong momentum for focused movement
                         
                         // Additional persistence bonus if ant has been following trails successfully
                         let persistence_bonus = if ant.behavior_state == AntBehaviorState::Following {
-                            0.25 // Increased trail persistence for better path commitment
+                            0.2 // Extra bias to continue following if already on a trail
                         } else {
                             0.0
                         };
                         
                         // Add gradient bonus for food pheromones - follow trails that lead toward food
                         let gradient_bonus = if pheromone_strength > current_pheromone + 0.05 {
-                            0.3 // Bonus for following stronger food pheromone (toward food sources)
+                            0.4 // Stronger bonus for following stronger food pheromone trails
                         } else if pheromone_strength < current_pheromone - 0.05 {
                             -0.2 // Strict penalty - abandon declining trails
                         } else {

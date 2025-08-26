@@ -1,13 +1,13 @@
 {
-  "current_generation": 32,
-  "description": "Enhanced trail persistence - building on Generation 31 success",
+  "current_generation": 38,
+  "description": "Ultra-sensitive trail detection",
   "performance_metrics": {
-    "average_return_time_seconds": 6.2646074295043945,
-    "average_time_since_goal_seconds": 52.917686462402344,
+    "average_return_time_seconds": 5.806215286254883,
+    "average_time_since_goal_seconds": 48.66523742675781,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 82,
-    "total_food_collected": 84.0
+    "successful_deliveries": 72,
+    "total_food_collected": 83.0
   },
-  "timestamp": "2025-08-26T05:26:27Z",
-  "video_filename": "0031_enhanced_trail_persistence_-_building_on_generation_31_success.mp4"
+  "timestamp": "2025-08-26T05:40:41Z",
+  "video_filename": "0037_ultra-sensitive_trail_detection.mp4"
 }

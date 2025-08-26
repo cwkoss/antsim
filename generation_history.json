@@ -1,5 +1,5 @@
 {
-  "current_generation": 31,
+  "current_generation": 37,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -446,6 +446,102 @@
       },
       "timestamp": "2025-08-26T05:21:41Z",
       "video_filename": "0030_revert_nest_orbiting_fix_and_return_to_baseline_performance.mp4"
+    },
+    {
+      "description": "Revert to Gen 31 config and optimize exploration scaling",
+      "generation": 32,
+      "key_changes": [
+        "Generation 32 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.2646074295043945,
+        "average_time_since_goal_seconds": 52.917686462402344,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 82,
+        "total_food_collected": 84.0
+      },
+      "timestamp": "2025-08-26T05:26:27Z",
+      "video_filename": "0031_enhanced_trail_persistence_-_building_on_generation_31_success.mp4"
+    },
+    {
+      "description": "Reduce exploration noise to 0.05 for more focused movement",
+      "generation": 33,
+      "key_changes": [
+        "Generation 33 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.665703296661377,
+        "average_time_since_goal_seconds": 55.664512634277344,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 76,
+        "total_food_collected": 79.0
+      },
+      "timestamp": "2025-08-26T05:30:10Z",
+      "video_filename": "0032_revert_to_gen_31_config_and_optimize_exploration_scaling.mp4"
+    },
+    {
+      "description": "Ultra-focused movement: noise 0.03 + momentum 0.9",
+      "generation": 34,
+      "key_changes": [
+        "Generation 34 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.444201469421387,
+        "average_time_since_goal_seconds": 50.591365814208984,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 87,
+        "total_food_collected": 96.0
+      },
+      "timestamp": "2025-08-26T05:32:08Z",
+      "video_filename": "0033_reduce_exploration_noise_to_0.05_for_more_focused_movement.mp4"
+    },
+    {
+      "description": "Enhanced trail following: gradient bonus 0.3 to 0.4",
+      "generation": 35,
+      "key_changes": [
+        "Generation 35 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.192589282989502,
+        "average_time_since_goal_seconds": 43.37582015991211,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 76,
+        "total_food_collected": 83.0
+      },
+      "timestamp": "2025-08-26T05:34:12Z",
+      "video_filename": "0034_ultra-focused_movement.mp4"
+    },
+    {
+      "description": "Enhanced pheromone sensitivity: follow_gain 2.0 to 2.5",
+      "generation": 36,
+      "key_changes": [
+        "Generation 36 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.594917297363281,
+        "average_time_since_goal_seconds": 39.51102828979492,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 75,
+        "total_food_collected": 79.0
+      },
+      "timestamp": "2025-08-26T05:36:45Z",
+      "video_filename": "0035_enhanced_trail_following.mp4"
+    },
+    {
+      "description": "Ultra-sensitive trail detection: threshold 0.001 to 0.0005",
+      "generation": 37,
+      "key_changes": [
+        "Generation 37 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.043727397918701,
+        "average_time_since_goal_seconds": 38.097904205322266,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 91,
+        "total_food_collected": 98.0
+      },
+      "timestamp": "2025-08-26T05:38:41Z",
+      "video_filename": "0036_enhanced_pheromone_sensitivity.mp4"
     }
   ],
   "next_planned_improvements": [
