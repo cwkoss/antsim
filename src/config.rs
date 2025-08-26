@@ -31,11 +31,11 @@ impl Default for SimConfig {
             initial_ants: 50,       // Back to original 50 ants  
             food_sources: 10,       // Back to original 10 food sources - no cheating!
             
-            evap_food: 0.00015,     // Back to Generation 37/39 successful value
-            evap_nest: 0.0005,      // REVERTED: Slower nest decay - provides essential navigation 
+            evap_food: 0.00015,     // Back to Generation 54 successful value
+            evap_nest: 0.0005,      // Back to Generation 54 successful value
             evap_alarm: 0.01,
-            diff_food: 0.12,        // Increased diffusion for even easier trail detection  
-            diff_nest: 0.05,        // OPTIMIZATION 2: More nest diffusion
+            diff_food: 0.12,        // Back to Generation 54 successful value  
+            diff_nest: 0.05,        // Back to Generation 54 successful value
             diff_alarm: 0.2,
             
             base_exploration_noise: 0.02,    // Ultra-low noise for maximum focus

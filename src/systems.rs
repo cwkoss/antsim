@@ -142,10 +142,10 @@ pub fn sensing_system(
                             // Strong immediate gradient means we're on a good trail
                             if lookahead_pheromone < 0.1 && pheromone_strength > 0.3 {
                                 // FRESH TRAIL BONUS: Strong current pheromone but weak ahead = trail establishment
-                                0.6 // Major bonus for following fresh, strong trails
+                                0.6 // Revert to original fresh trail bonus
                             } else if predictive_gradient >= -0.02 {
                                 // Established trail with good lookahead
-                                0.4 + predictive_gradient * 0.8
+                                0.4 + predictive_gradient * 0.8 // Revert established trail bonus
                             } else {
                                 // Good immediate gradient but declining ahead - still valuable
                                 0.35 // Reduced but still positive bonus
@@ -183,8 +183,8 @@ pub fn sensing_system(
                         if angle_diff > 0.0 { angle_diff - std::f32::consts::TAU } else { angle_diff + std::f32::consts::TAU }
                     } else { angle_diff };
                     
-                    // More gradual direction adjustment to stick to paths better
-                    ant.current_direction += smooth_angle_change * 0.25; // Reduced from 0.4 for path stability
+                    // Slightly enhanced gradual direction adjustment for better path persistence
+                    ant.current_direction += smooth_angle_change * 0.22; // Conservative reduction for improved path stability
                     set_ant_velocity(&mut velocity, ant.current_direction, MovementType::FollowingTrail);
                     
                     // Back to Generation 51 successful sensing intervals
@@ -207,10 +207,10 @@ pub fn sensing_system(
                             (time.elapsed_seconds() - 1.0).max(0.0) // Startup was 1.0s
                         };
                         
-                        // Increase exploration aggressiveness with search time (up to 60s max)
+                        // Revert to original exploration angles
                         let exploration_factor = (search_time / 60.0).min(1.0); // 0.0 to 1.0 over 60 seconds
-                        let base_angle = 1.2;
-                        let max_angle = 2.2;
+                        let base_angle = 1.2; // Restore original exploration range
+                        let max_angle = 2.2;  // Restore original exploration range
                         let angle_range = base_angle + (max_angle - base_angle) * exploration_factor;
                         
                         let angle_change = (rand::random::<f32>() - 0.5) * angle_range;

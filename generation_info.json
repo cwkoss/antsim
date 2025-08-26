@@ -1,13 +1,13 @@
 {
-  "current_generation": 53,
-  "description": "VIDEO FIX",
+  "current_generation": 62,
+  "description": "Final video fix",
   "performance_metrics": {
-    "average_return_time_seconds": 5.652185916900635,
-    "average_time_since_goal_seconds": 40.904842376708984,
+    "average_return_time_seconds": 5.576876640319824,
+    "average_time_since_goal_seconds": 55.060264587402344,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 79,
-    "total_food_collected": 80.0
+    "successful_deliveries": 54,
+    "total_food_collected": 54.0
   },
-  "timestamp": "2025-08-26T20:33:43Z",
-  "video_filename": "0052_video_fix.mp4"
+  "timestamp": "2025-08-26T21:53:53Z",
+  "video_filename": "0061_final_video_fix.mp4"
 }

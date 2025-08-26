@@ -38,17 +38,24 @@ pub fn video_recording_system(
         // Update frame timer
         video_recorder.frame_timer += time.delta_seconds();
         
+        
         // Only capture frames at the specified interval
         if video_recorder.frame_timer >= video_recorder.frame_interval {
-            video_recorder.frame_timer = 0.0; // Reset timer
+            video_recorder.frame_timer -= video_recorder.frame_interval; // Subtract interval instead of reset to 0
             
             // Create visual frame with actual simulation data (capture whole simulation)
             capture_simulation_frame(&mut video_recorder, &performance_tracker, &generation_info, time.elapsed_seconds(), 
                                    &pheromone_grid, &color_config, &ant_query, &food_query, &nest_query);
             
+            
             // Debug: Print frame count periodically
-            if video_recorder.frames.len() % 60 == 0 {
-                println!("📹 Captured {} frames at {:.1}s (every {:.1}s interval)", video_recorder.frames.len(), time.elapsed_seconds(), video_recorder.frame_interval);
+            if video_recorder.frames.len() % 30 == 0 {
+                println!("📹 Captured {} frames at {:.2}s (interval={:.2}s, timer was {:.3}s)", 
+                    video_recorder.frames.len(), 
+                    time.elapsed_seconds(), 
+                    video_recorder.frame_interval,
+                    video_recorder.frame_timer + video_recorder.frame_interval // Show what timer was before subtraction
+                );
             }
         }
     }
@@ -270,7 +277,7 @@ fn capture_placeholder_frame(video_recorder: &mut VideoRecorder) {
 }
 
 fn should_save_video(performance_tracker: &PerformanceTracker, time: &Time) -> bool {
-    // TEMPORARY DEBUG: Only save after 90 seconds - disable all early exit conditions
+    // Save after 90 seconds as intended
     let elapsed = time.elapsed_seconds();
     let time_condition = elapsed > 90.0;
     
@@ -321,16 +328,10 @@ fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &
     
     println!("💾 Saving {} frames to: {}", video_recorder.frames.len(), frames_dir);
     
-    // Save every 6th frame for 5-second video (6x speed from 30s capture)
-    for (i, frame) in video_recorder.frames.iter().step_by(6).enumerate() {
+    // Save all frames for 15-second video (450 frames at 30fps = 15 seconds)
+    for (i, frame) in video_recorder.frames.iter().enumerate() {
         let frame_path = format!("{}/frame_{:04}.png", frames_dir, i);
         
-        // Debug frame data before saving
-        println!("🔍 Frame {}: {} bytes, expected {}", 
-            i, 
-            frame.len(), 
-            video_recorder.frame_width * video_recorder.frame_height * 4
-        );
         
         // Save as PNG image
         let _ = save_frame_as_png(&frame_path, frame, video_recorder.frame_width, video_recorder.frame_height);

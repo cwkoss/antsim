@@ -52,7 +52,7 @@ impl Default for VideoRecorder {
             test_number: 1,
             changes_description: "Default configuration".to_string(),
             frame_timer: 0.0,
-            frame_interval: 0.033, // Capture every 0.033 seconds (~30 fps) for much more detail
+            frame_interval: 0.2, // Capture every 0.2 seconds to get exactly 450 frames over 90s (90/450=0.2)
         }
     }
 }

@@ -1,5 +1,5 @@
 {
-  "current_generation": 52,
+  "current_generation": 61,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -782,6 +782,150 @@
       },
       "timestamp": "2025-08-26T20:28:34Z",
       "video_filename": "0051_sensing_optimization.mp4"
+    },
+    {
+      "description": "CORRECTED VIDEO: 0.2s intervals for 450 frames = 15-second video at 30fps playback",
+      "generation": 53,
+      "key_changes": [
+        "Generation 53 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.652185916900635,
+        "average_time_since_goal_seconds": 40.904842376708984,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 79,
+        "total_food_collected": 80.0
+      },
+      "timestamp": "2025-08-26T20:33:43Z",
+      "video_filename": "0052_video_fix.mp4"
+    },
+    {
+      "description": "Fixed video timing for 15-second duration",
+      "generation": 54,
+      "key_changes": [
+        "Generation 54 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.5876641273498535,
+        "average_time_since_goal_seconds": 48.17075729370117,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 74,
+        "total_food_collected": 77.0
+      },
+      "timestamp": "2025-08-26T21:03:47Z",
+      "video_filename": "0053_corrected_video.mp4"
+    },
+    {
+      "description": "Focus optimization: increased fresh trail bonus and reduced exploration randomness",
+      "generation": 55,
+      "key_changes": [
+        "Generation 55 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.869423866271973,
+        "average_time_since_goal_seconds": 51.77122116088867,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 43,
+        "total_food_collected": 43.0
+      },
+      "timestamp": "2025-08-26T21:07:51Z",
+      "video_filename": "0054_fixed_video_timing_for_15-second_duration.mp4"
+    },
+    {
+      "description": "Enhanced pheromone persistence: reduced evaporation and increased diffusion",
+      "generation": 56,
+      "key_changes": [
+        "Generation 56 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.90533447265625,
+        "average_time_since_goal_seconds": 61.921142578125,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 34,
+        "total_food_collected": 34.0
+      },
+      "timestamp": "2025-08-26T21:11:24Z",
+      "video_filename": "0055_focus_optimization.mp4"
+    },
+    {
+      "description": "Conservative path stability improvement: enhanced trail following persistence",
+      "generation": 57,
+      "key_changes": [
+        "Generation 57 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.914268493652344,
+        "average_time_since_goal_seconds": 74.9361801147461,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 16,
+        "total_food_collected": 17.0
+      },
+      "timestamp": "2025-08-26T21:14:10Z",
+      "video_filename": "0056_enhanced_pheromone_persistence.mp4"
+    },
+    {
+      "description": "Video timing fix: corrected frame capture logic for 450-frame target",
+      "generation": 58,
+      "key_changes": [
+        "Generation 58 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.637315273284912,
+        "average_time_since_goal_seconds": 63.6271858215332,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 35,
+        "total_food_collected": 35.0
+      },
+      "timestamp": "2025-08-26T21:16:41Z",
+      "video_filename": "0057_conservative_path_stability_improvement.mp4"
+    },
+    {
+      "description": "Debug frame timing with detailed output",
+      "generation": 59,
+      "key_changes": [
+        "Generation 59 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.528736591339111,
+        "average_time_since_goal_seconds": 56.272972106933594,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 45,
+        "total_food_collected": 48.0
+      },
+      "timestamp": "2025-08-26T21:46:02Z",
+      "video_filename": "0058_video_timing_fix.mp4"
+    },
+    {
+      "description": "FIXED: Video timing now correctly captures 450 frames for proper 15-second videos",
+      "generation": 60,
+      "key_changes": [
+        "Generation 60 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.582204818725586,
+        "average_time_since_goal_seconds": 59.43620300292969,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 57,
+        "total_food_collected": 58.0
+      },
+      "timestamp": "2025-08-26T21:48:22Z",
+      "video_filename": "0059_debug_frame_timing_with_detailed_output.mp4"
+    },
+    {
+      "description": "Final video fix: save all 450 frames for proper 15-second duration",
+      "generation": 61,
+      "key_changes": [
+        "Generation 61 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.046976566314697,
+        "average_time_since_goal_seconds": 47.28900909423828,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 46,
+        "total_food_collected": 47.0
+      },
+      "timestamp": "2025-08-26T21:51:44Z",
+      "video_filename": "0060_fixed.mp4"
     }
   ],
   "next_planned_improvements": [
