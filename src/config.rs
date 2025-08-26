@@ -32,7 +32,7 @@ impl Default for SimConfig {
             food_sources: 10,       // Back to original 10 food sources - no cheating!
             
             evap_food: 0.00015,     // OPTIMIZATION 2: Slower decay = longer trails
-            evap_nest: 0.002,       // OPTIMIZATION 4: 4x faster nest decay to prevent area clogging 
+            evap_nest: 0.0005,      // REVERTED: Slower nest decay - provides essential navigation 
             evap_alarm: 0.01,
             diff_food: 0.08,        // OPTIMIZATION 2: More diffusion = easier trail detection  
             diff_nest: 0.05,        // OPTIMIZATION 2: More nest diffusion

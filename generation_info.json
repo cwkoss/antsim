@@ -1,13 +1,13 @@
 {
-  "current_generation": 27,
-  "description": "Faster nest pheromone decay to prevent starting area congestion",
+  "current_generation": 28,
+  "description": "Adaptive exploration strategy with time-based aggressiveness scaling",
   "performance_metrics": {
-    "average_return_time_seconds": 6.690868377685547,
-    "average_time_since_goal_seconds": 47.824466705322266,
+    "average_return_time_seconds": 6.225595951080322,
+    "average_time_since_goal_seconds": 37.752967834472656,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 80,
-    "total_food_collected": 84.0
+    "successful_deliveries": 90,
+    "total_food_collected": 99.0
   },
-  "timestamp": "2025-08-26T03:01:49Z",
-  "video_filename": "0026_faster_nest_pheromone_decay_to_prevent_starting_area_congestion.mp4"
+  "timestamp": "2025-08-26T05:08:16Z",
+  "video_filename": "0027_adaptive_exploration_strategy_with_time-based_aggressiveness_scaling.mp4"
 }

@@ -159,13 +159,28 @@ pub fn sensing_system(
                     ant.behavior_state = AntBehaviorState::Exploring;
                     
                     if ant.sensing_timer <= 0.0 {
-                        // Conservative exploration - moderate angle changes
-                        let angle_change = (rand::random::<f32>() - 0.5) * 1.2; // Balanced exploration
+                        // Adaptive exploration: more aggressive as search time increases
+                        let search_time = if ant.last_goal_achievement_time > 0.0 {
+                            time.elapsed_seconds() - ant.last_goal_achievement_time
+                        } else {
+                            time.elapsed_seconds() - ant.startup_timer.max(0.0)
+                        };
+                        
+                        // Increase exploration aggressiveness with search time (up to 60s max)
+                        let exploration_factor = (search_time / 60.0).min(1.0); // 0.0 to 1.0 over 60 seconds
+                        let base_angle = 1.2;
+                        let max_angle = 2.2;
+                        let angle_range = base_angle + (max_angle - base_angle) * exploration_factor;
+                        
+                        let angle_change = (rand::random::<f32>() - 0.5) * angle_range;
                         ant.current_direction += angle_change;
                         set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
                         
-                        // Moderate exploration sensing for balanced discovery
-                        ant.sensing_timer = 0.6 + rand::random::<f32>() * 0.3; // 0.6-0.9s range - balanced exploration
+                        // Faster sensing for longer-searching ants
+                        let base_sensing = 0.6;
+                        let min_sensing = 0.3;
+                        let sensing_time = base_sensing - (base_sensing - min_sensing) * exploration_factor;
+                        ant.sensing_timer = sensing_time + rand::random::<f32>() * 0.2;
                     }
                 }
             }
