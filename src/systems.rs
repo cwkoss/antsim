@@ -89,6 +89,15 @@ pub fn sensing_system(
             } else {
                 // For exploring ants: follow FOOD pheromones (trails left by successful ants who found food)
                 let pheromone_readings = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food);
+                
+                // Check if ant is near nest (within 100 units) - if so, reduce sensitivity to avoid orbiting
+                let distance_from_nest = (pos.x * pos.x + pos.y * pos.y).sqrt();
+                let nest_proximity_factor = if distance_from_nest < 100.0 {
+                    0.3 // Reduce food pheromone sensitivity near nest to prevent orbiting
+                } else {
+                    1.0 // Normal sensitivity when away from nest
+                };
+                
                 let mut best_direction = ant.current_direction;
                 let mut max_pheromone = 0.0;
                 let mut found_trail = false;
@@ -97,7 +106,8 @@ pub fn sensing_system(
                 let current_pheromone = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food)[0]; // Sample at current position
                 
                 for (i, &pheromone_strength) in pheromone_readings.iter().enumerate() {
-                    if pheromone_strength > 0.15 {
+                    let adjusted_strength = pheromone_strength * nest_proximity_factor;
+                    if adjusted_strength > 0.15 {
                         let angle = (i as f32) * std::f32::consts::TAU / 8.0;
                         
                         // Calculate momentum bonus for maintaining direction
@@ -117,15 +127,15 @@ pub fn sensing_system(
                         };
                         
                         // Add gradient bonus for food pheromones - follow trails that lead toward food
-                        let gradient_bonus = if pheromone_strength > current_pheromone + 0.05 {
+                        let gradient_bonus = if adjusted_strength > current_pheromone + 0.05 {
                             0.3 // Bonus for following stronger food pheromone (toward food sources)
-                        } else if pheromone_strength < current_pheromone - 0.05 {
+                        } else if adjusted_strength < current_pheromone - 0.05 {
                             -0.2 // Strict penalty - abandon declining trails
                         } else {
                             0.0 // Neutral if pheromone strength is similar
                         };
                         
-                        let effective_strength = pheromone_strength + momentum_bonus + gradient_bonus + persistence_bonus;
+                        let effective_strength = adjusted_strength + momentum_bonus + gradient_bonus + persistence_bonus;
                         
                         if effective_strength > max_pheromone {
                             max_pheromone = effective_strength;

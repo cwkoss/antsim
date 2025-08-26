@@ -1,5 +1,5 @@
 {
-  "current_generation": 28,
+  "current_generation": 29,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -398,6 +398,22 @@
       },
       "timestamp": "2025-08-26T05:08:16Z",
       "video_filename": "0027_adaptive_exploration_strategy_with_time-based_aggressiveness_scaling.mp4"
+    },
+    {
+      "description": "Nest orbiting fix - reduced pheromone sensitivity near nest for exploring ants",
+      "generation": 29,
+      "key_changes": [
+        "Generation 29 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.857381820678711,
+        "average_time_since_goal_seconds": 37.22509002685547,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 85,
+        "total_food_collected": 89.0
+      },
+      "timestamp": "2025-08-26T05:11:15Z",
+      "video_filename": "0028_balanced_food_pheromone_distance_decay_for_better_trail_range.mp4"
     }
   ],
   "next_planned_improvements": [
