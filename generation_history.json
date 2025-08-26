@@ -1,5 +1,5 @@
 {
-  "current_generation": 51,
+  "current_generation": 52,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -766,6 +766,22 @@
       },
       "timestamp": "2025-08-26T20:23:47Z",
       "video_filename": "0050_startup_fix.mp4"
+    },
+    {
+      "description": "VIDEO FIX: Corrected frame rate to 30fps + reverted to Generation 51 behavior",
+      "generation": 52,
+      "key_changes": [
+        "Generation 52 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.914731502532959,
+        "average_time_since_goal_seconds": 48.8418083190918,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 62,
+        "total_food_collected": 64.0
+      },
+      "timestamp": "2025-08-26T20:28:34Z",
+      "video_filename": "0051_sensing_optimization.mp4"
     }
   ],
   "next_planned_improvements": [

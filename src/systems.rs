@@ -187,12 +187,12 @@ pub fn sensing_system(
                     ant.current_direction += smooth_angle_change * 0.25; // Reduced from 0.4 for path stability
                     set_ant_velocity(&mut velocity, ant.current_direction, MovementType::FollowingTrail);
                     
-                    // Optimized sensing intervals - faster response times
+                    // Back to Generation 51 successful sensing intervals
                     let trail_strength_factor = (max_pheromone - 0.2).max(0.0) / 0.8;
                     ant.sensing_timer = if max_pheromone > 0.4 {
-                        0.3 + trail_strength_factor * 0.2 // 0.3-0.5s for strong trails - faster sensing
+                        0.5 + trail_strength_factor * 0.3 // 0.5-0.8s for strong trails - maintain momentum
                     } else {
-                        0.15 + trail_strength_factor * 0.05 // 0.15-0.2s for weak trails - much faster
+                        0.2 + trail_strength_factor * 0.1 // 0.2-0.3s for weak trails - stay responsive
                     };
                 } else {
                     // No trail found - random exploration
@@ -217,11 +217,11 @@ pub fn sensing_system(
                         ant.current_direction += angle_change;
                         set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
                         
-                        // Much faster sensing for quicker responses
-                        let base_sensing = 0.4; // Reduced from 0.6
-                        let min_sensing = 0.2;  // Reduced from 0.3
+                        // Back to Generation 51 successful exploration sensing
+                        let base_sensing = 0.6;
+                        let min_sensing = 0.3;
                         let sensing_time = base_sensing - (base_sensing - min_sensing) * exploration_factor;
-                        ant.sensing_timer = sensing_time + rand::random::<f32>() * 0.1; // Less randomness
+                        ant.sensing_timer = sensing_time + rand::random::<f32>() * 0.2;
                     }
                 }
             }

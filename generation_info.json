@@ -1,13 +1,13 @@
 {
-  "current_generation": 52,
-  "description": "SENSING OPTIMIZATION",
+  "current_generation": 53,
+  "description": "VIDEO FIX",
   "performance_metrics": {
-    "average_return_time_seconds": 5.914731502532959,
-    "average_time_since_goal_seconds": 48.8418083190918,
+    "average_return_time_seconds": 5.652185916900635,
+    "average_time_since_goal_seconds": 40.904842376708984,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 62,
-    "total_food_collected": 64.0
+    "successful_deliveries": 79,
+    "total_food_collected": 80.0
   },
-  "timestamp": "2025-08-26T20:28:34Z",
-  "video_filename": "0051_sensing_optimization.mp4"
+  "timestamp": "2025-08-26T20:33:43Z",
+  "video_filename": "0052_video_fix.mp4"
 }
