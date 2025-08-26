@@ -187,12 +187,12 @@ pub fn sensing_system(
                     ant.current_direction += smooth_angle_change * 0.25; // Reduced from 0.4 for path stability
                     set_ant_velocity(&mut velocity, ant.current_direction, MovementType::FollowingTrail);
                     
-                    // Longer sensing intervals on strong trails to maintain momentum
-                    let trail_strength_factor = (max_pheromone - 0.2).max(0.0) / 0.8; // Normalize 0.2-1.0 to 0.0-1.0
+                    // Optimized sensing intervals - faster response times
+                    let trail_strength_factor = (max_pheromone - 0.2).max(0.0) / 0.8;
                     ant.sensing_timer = if max_pheromone > 0.4 {
-                        0.5 + trail_strength_factor * 0.3 // 0.5-0.8s for strong trails - maintain momentum
+                        0.3 + trail_strength_factor * 0.2 // 0.3-0.5s for strong trails - faster sensing
                     } else {
-                        0.2 + trail_strength_factor * 0.1 // 0.2-0.3s for weak trails - stay responsive
+                        0.15 + trail_strength_factor * 0.05 // 0.15-0.2s for weak trails - much faster
                     };
                 } else {
                     // No trail found - random exploration
@@ -203,7 +203,8 @@ pub fn sensing_system(
                         let search_time = if ant.last_goal_achievement_time > 0.0 {
                             time.elapsed_seconds() - ant.last_goal_achievement_time
                         } else {
-                            time.elapsed_seconds() - ant.startup_timer.max(0.0)
+                            // Time since startup ended (when ant became active)
+                            (time.elapsed_seconds() - 1.0).max(0.0) // Startup was 1.0s
                         };
                         
                         // Increase exploration aggressiveness with search time (up to 60s max)
@@ -216,11 +217,11 @@ pub fn sensing_system(
                         ant.current_direction += angle_change;
                         set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
                         
-                        // Faster sensing for longer-searching ants
-                        let base_sensing = 0.6;
-                        let min_sensing = 0.3;
+                        // Much faster sensing for quicker responses
+                        let base_sensing = 0.4; // Reduced from 0.6
+                        let min_sensing = 0.2;  // Reduced from 0.3
                         let sensing_time = base_sensing - (base_sensing - min_sensing) * exploration_factor;
-                        ant.sensing_timer = sensing_time + rand::random::<f32>() * 0.2;
+                        ant.sensing_timer = sensing_time + rand::random::<f32>() * 0.1; // Less randomness
                     }
                 }
             }
@@ -268,7 +269,8 @@ pub fn sensing_system(
                         let time_since_goal = if ant.last_goal_achievement_time > 0.0 {
                             current_time - ant.last_goal_achievement_time
                         } else {
-                            current_time - ant.startup_timer.max(0.0)
+                            // Time since startup ended (when ant became active)
+                            (current_time - 1.0).max(0.0) // Startup was 1.0s
                         };
                         
                         println!("🐜 DEBUG ANT #{} @ T={:.1}s | Pos=({:.0},{:.0}) DistToNest={:.0} | State={:?} | Carrying={} | TimeSinceGoal={:.1}s", 
@@ -462,7 +464,7 @@ pub fn food_collection_system(
                         
                         // Debug logging for food pickup
                         if let Some(debug_marker) = debug_ant {
-                            let search_time = time.elapsed_seconds() - ant.startup_timer.max(0.0);
+                            let search_time = (time.elapsed_seconds() - 1.0).max(0.0); // Time since 1.0s startup ended
                             println!("🎯 DEBUG ANT #{} FOUND FOOD! @ T={:.1}s | Pos=({:.0},{:.0}) | SearchTime={:.1}s | FoodLeft={:.1}", 
                                 debug_marker.ant_id, time.elapsed_seconds(), ant_pos.x, ant_pos.y, search_time, food.amount);
                         }
@@ -553,7 +555,8 @@ pub fn performance_analysis_system(
         let time_since_goal = if ant.last_goal_achievement_time > 0.0 {
             runtime - ant.last_goal_achievement_time
         } else {
-            (runtime - ant.startup_timer).max(0.0)
+            // Time since startup ended (1.0s)
+            (runtime - 1.0).max(0.0)
         };
         
         if ant.startup_timer <= 0.0 {

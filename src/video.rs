@@ -35,13 +35,21 @@ pub fn video_recording_system(
     }
     
     if video_recorder.is_recording {
-        // Create visual frame with actual simulation data (capture whole simulation)
-        capture_simulation_frame(&mut video_recorder, &performance_tracker, &generation_info, time.elapsed_seconds(), 
-                               &pheromone_grid, &color_config, &ant_query, &food_query, &nest_query);
+        // Update frame timer
+        video_recorder.frame_timer += time.delta_seconds();
         
-        // Debug: Print frame count periodically
-        if video_recorder.frames.len() % 60 == 0 {
-            println!("📹 Captured {} frames at {:.1}s", video_recorder.frames.len(), time.elapsed_seconds());
+        // Only capture frames at the specified interval
+        if video_recorder.frame_timer >= video_recorder.frame_interval {
+            video_recorder.frame_timer = 0.0; // Reset timer
+            
+            // Create visual frame with actual simulation data (capture whole simulation)
+            capture_simulation_frame(&mut video_recorder, &performance_tracker, &generation_info, time.elapsed_seconds(), 
+                                   &pheromone_grid, &color_config, &ant_query, &food_query, &nest_query);
+            
+            // Debug: Print frame count periodically
+            if video_recorder.frames.len() % 60 == 0 {
+                println!("📹 Captured {} frames at {:.1}s (every {:.1}s interval)", video_recorder.frames.len(), time.elapsed_seconds(), video_recorder.frame_interval);
+            }
         }
     }
     

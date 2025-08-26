@@ -37,6 +37,24 @@ pub struct VideoRecorder {
     pub max_frames: usize, // 30 seconds worth at ~60fps = 1800 frames
     pub test_number: u32,
     pub changes_description: String,
+    pub frame_timer: f32, // Timer for frame capture interval
+    pub frame_interval: f32, // How often to capture frames (in seconds)
+}
+
+impl Default for VideoRecorder {
+    fn default() -> Self {
+        Self {
+            frames: Vec::new(),
+            is_recording: false,
+            frame_width: 406,
+            frame_height: 720,
+            max_frames: 3600, // Extended for longer, more detailed videos
+            test_number: 1,
+            changes_description: "Default configuration".to_string(),
+            frame_timer: 0.0,
+            frame_interval: 0.1, // Capture every 0.1 seconds (10 fps) instead of every frame
+        }
+    }
 }
 
 #[derive(Resource)]
@@ -103,19 +121,7 @@ impl GenerationInfo {
     }
 }
 
-impl Default for VideoRecorder {
-    fn default() -> Self {
-        Self {
-            frames: Vec::new(),
-            is_recording: false,
-            frame_width: 406, // Mobile aspect ratio width (9:16 ≈ 406:720, even width for H.264)
-            frame_height: 720,
-            max_frames: usize::MAX, // No limit - capture entire simulation
-            test_number: 1,
-            changes_description: "BASELINE: 50 ants, 10 food sources 333-500 units from nest, direct nest homing for food carriers".to_string(),
-        }
-    }
-}
+// Removed duplicate Default implementation - using the one above
 
 impl Default for PerformanceTracker {
     fn default() -> Self {

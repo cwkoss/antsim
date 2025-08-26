@@ -1,5 +1,5 @@
 {
-  "current_generation": 49,
+  "current_generation": 51,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -734,6 +734,38 @@
       },
       "timestamp": "2025-08-26T17:22:05Z",
       "video_filename": "0048_maximum_commitment.mp4"
+    },
+    {
+      "description": "STARTUP FIX: Reduced startup delay from 5s to 1s + fixed TimeSinceGoal calculation",
+      "generation": 50,
+      "key_changes": [
+        "Generation 50 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.710143089294434,
+        "average_time_since_goal_seconds": 42.623573303222656,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 83,
+        "total_food_collected": 89.0
+      },
+      "timestamp": "2025-08-26T17:31:33Z",
+      "video_filename": "0049_breakthrough.mp4"
+    },
+    {
+      "description": "SENSING OPTIMIZATION: Faster response times + improved video frame rate (0.1s intervals)",
+      "generation": 51,
+      "key_changes": [
+        "Generation 51 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.167893409729004,
+        "average_time_since_goal_seconds": 19.49456214904785,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 104,
+        "total_food_collected": 106.0
+      },
+      "timestamp": "2025-08-26T20:23:47Z",
+      "video_filename": "0050_startup_fix.mp4"
     }
   ],
   "next_planned_improvements": [

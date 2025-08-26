@@ -136,7 +136,7 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
                 food_pickup_time: 0.0,
                 delivery_attempts: 0,
                 successful_deliveries: 0,
-                startup_timer: 5.0, // Proper startup time for stable behavior
+                startup_timer: 1.0, // Minimal startup time - ants should start working quickly
                 has_found_food: false, // Track if ant has ever found food
                 food_carry_start_time: 0.0, // When ant picked up food
                 last_goal_achievement_time: 0.0, // Initialize as never achieved a goal
