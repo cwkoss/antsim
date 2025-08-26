@@ -256,7 +256,7 @@ pub fn pheromone_deposit_system(
                     
                     if ant.carrying_food {
                         // Lay food trail when returning to nest
-                        let decay_factor = (-ant.distance_from_food * 0.02).exp(); // Quadrupled distance decay rate
+                        let decay_factor = (-ant.distance_from_food * 0.01).exp(); // Balanced distance decay rate
                         let deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
                         
                         grid.deposit(

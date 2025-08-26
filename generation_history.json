@@ -1,5 +1,5 @@
 {
-  "current_generation": 27,
+  "current_generation": 28,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -382,6 +382,22 @@
       },
       "timestamp": "2025-08-26T03:01:49Z",
       "video_filename": "0026_faster_nest_pheromone_decay_to_prevent_starting_area_congestion.mp4"
+    },
+    {
+      "description": "Balanced food pheromone distance decay for better trail range",
+      "generation": 28,
+      "key_changes": [
+        "Generation 28 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.225595951080322,
+        "average_time_since_goal_seconds": 37.752967834472656,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 90,
+        "total_food_collected": 99.0
+      },
+      "timestamp": "2025-08-26T05:08:16Z",
+      "video_filename": "0027_adaptive_exploration_strategy_with_time-based_aggressiveness_scaling.mp4"
     }
   ],
   "next_planned_improvements": [
