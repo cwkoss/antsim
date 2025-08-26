@@ -7,15 +7,15 @@ echo "🐜 Starting Ant Colony Simulation with Automated Video Generation"
 echo "================================================================"
 echo ""
 
-# Prompt for generation description
-echo "📝 Please provide a description for this generation (what changes/optimizations are being tested):"
-read -p "Generation description: " GENERATION_DESCRIPTION
-
-if [ -z "$GENERATION_DESCRIPTION" ]; then
-    echo "⚠️  No description provided. Using default description."
-    GENERATION_DESCRIPTION="Standard optimization iteration"
+# Get generation description from command line argument
+if [ $# -eq 0 ]; then
+    echo "❌ Usage: $0 \"<generation description>\""
+    echo "   Example: $0 \"Path persistence optimization with stronger momentum\""
+    read -p "Press Enter to exit"
+    exit 1
 fi
 
+GENERATION_DESCRIPTION="$1"
 echo "📋 This generation will be labeled: '$GENERATION_DESCRIPTION'"
 echo ""
 

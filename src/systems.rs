@@ -89,15 +89,6 @@ pub fn sensing_system(
             } else {
                 // For exploring ants: follow FOOD pheromones (trails left by successful ants who found food)
                 let pheromone_readings = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food);
-                
-                // Check if ant is near nest (within 100 units) - if so, reduce sensitivity to avoid orbiting
-                let distance_from_nest = (pos.x * pos.x + pos.y * pos.y).sqrt();
-                let nest_proximity_factor = if distance_from_nest < 100.0 {
-                    0.3 // Reduce food pheromone sensitivity near nest to prevent orbiting
-                } else {
-                    1.0 // Normal sensitivity when away from nest
-                };
-                
                 let mut best_direction = ant.current_direction;
                 let mut max_pheromone = 0.0;
                 let mut found_trail = false;
@@ -106,8 +97,7 @@ pub fn sensing_system(
                 let current_pheromone = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food)[0]; // Sample at current position
                 
                 for (i, &pheromone_strength) in pheromone_readings.iter().enumerate() {
-                    let adjusted_strength = pheromone_strength * nest_proximity_factor;
-                    if adjusted_strength > 0.15 {
+                    if pheromone_strength > 0.15 {
                         let angle = (i as f32) * std::f32::consts::TAU / 8.0;
                         
                         // Calculate momentum bonus for maintaining direction
