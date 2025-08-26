@@ -1,13 +1,13 @@
 {
-  "current_generation": 25,
-  "description": "Standard optimization iteration",
+  "current_generation": 26,
+  "description": "Stronger initial pheromone trails with sharper distance decay",
   "performance_metrics": {
-    "average_return_time_seconds": 6.108246803283691,
-    "average_time_since_goal_seconds": 30.557069778442383,
+    "average_return_time_seconds": 6.462307453155518,
+    "average_time_since_goal_seconds": 33.152713775634766,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 126,
-    "total_food_collected": 130.0
+    "successful_deliveries": 81,
+    "total_food_collected": 84.0
   },
-  "timestamp": "2025-08-26T01:37:52Z",
-  "video_filename": "0024_standard_optimization_iteration.mp4"
+  "timestamp": "2025-08-26T02:57:48Z",
+  "video_filename": "0025_stronger_initial_pheromone_trails_with_sharper_distance_decay.mp4"
 }

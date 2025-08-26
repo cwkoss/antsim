@@ -40,8 +40,8 @@ impl Default for SimConfig {
             
             base_exploration_noise: 0.1,    // TEST 1: Reduce noise for more stable movement
             follow_gain: 2.0,
-            lay_rate_food: 20.0,    // OPTIMIZATION 2: Stronger pheromone laying
-            lay_rate_nest: 25.0,    // OPTIMIZATION 2: Stronger nest pheromone
+            lay_rate_food: 40.0,    // OPTIMIZATION 3: Doubled initial pheromone deposition
+            lay_rate_nest: 50.0,    // OPTIMIZATION 3: Doubled nest pheromone deposition
             food_quality_weight: 1.0,
             detection_threshold: 0.001,  // Back to Test 8 value
             saturation_limit: 10.0,

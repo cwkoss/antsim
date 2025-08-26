@@ -1,5 +1,5 @@
 {
-  "current_generation": 24,
+  "current_generation": 25,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -334,6 +334,22 @@
       },
       "timestamp": "2025-08-26T01:27:44Z",
       "video_filename": "0023_focus_optimization_on_average_time_since_goal_metric_only.mp4"
+    },
+    {
+      "description": "Stronger initial pheromone trails with sharper distance decay",
+      "generation": 25,
+      "key_changes": [
+        "Generation 25 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.108246803283691,
+        "average_time_since_goal_seconds": 30.557069778442383,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 126,
+        "total_food_collected": 130.0
+      },
+      "timestamp": "2025-08-26T01:37:52Z",
+      "video_filename": "0024_standard_optimization_iteration.mp4"
     }
   ],
   "next_planned_improvements": [
