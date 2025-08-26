@@ -84,13 +84,21 @@ cargo run
 
 ## Optimization Notes
 
-### Recent Performance Improvements (Generations 11-15)
+### Recent Performance Improvements (Generations 11-20)
 - **Pheromone-Guided Behavior**: Implemented sophisticated trail following system with 8-directional sensing
-- **Momentum-Based Movement**: Added directional bias (0.6 momentum bonus) to prevent oscillation and zigzag behavior  
-- **Separation of Concerns**: Food-carrying ants use direct nest navigation, exploring ants follow pheromone trails
+- **Momentum-Based Movement**: Added directional bias (0.4 momentum bonus) to prevent oscillation and zigzag behavior  
+- **Unified Movement System**: Centralized speed management with MovementType enum (Gen 16)
+- **Gradient-Based Trail Following**: Added pheromone gradient detection to prevent bouncing in dense trail areas
 - **Continuous Trail Deposition**: Fixed dashed pheromone trails by depositing along movement paths
 - **Realistic Movement Speeds**: Reduced speeds to 50-65 units/second for natural, continuous motion
 - **Best Performance**: Generation 13 achieved 28.5s average time since goal (63% improvement over baseline)
+
+### Critical Lessons Learned (Generations 17-20)
+- **⚠️ Pheromone Logic Bug**: Incorrectly assigned nest vs food pheromone following caused system failure (Gen 19: 0 deliveries)
+- **✅ Correct Logic**: Food-seeking ants MUST follow food pheromones, not nest pheromones
+- **🎯 Gradient Benefits**: Directional pheromone gradients reduce trail bouncing but require correct pheromone type
+- **🔧 Recovery Success**: Proper debugging and logical thinking restored functionality (Gen 20: 55 deliveries)
+- **📊 Testing Importance**: Each generation provides critical feedback for identifying logic errors
 
 ### Legacy Improvements (Pre-Generation 11)
 - Reduced startup timer to 5 seconds for faster food seeking
@@ -103,7 +111,7 @@ cargo run
 - Immediate recording start for complete behavior capture
 - Proper coordinate transformation and pixel mapping\n- **Video Naming Convention**: Fixed to use established pattern `####_description.mp4` (e.g., 0007_codebase_cleanup_generation.mp4)\n- **Cleanup**: Removed debug output and unused modules for cleaner console output
 
-### Current Status (Generation 15)\n- **Latest Video**: 0014_focus_optimization_on_average_time_since_goal_metric_only.mp4\n- **Performance**: 62.5s average time since goal, 5.9s return time, 66 deliveries\n- **Best Achievement**: Generation 13 reached 28.5s average time since goal (116 deliveries)\n- **System State**: Advanced pheromone-guided behavior with realistic movement speeds\n- **Video Naming**: Established pattern (####_description.mp4)\n\n## Development Workflow
+### Current Status (Generation 20)\n- **Latest Video**: 0019_focus_optimization_on_average_time_since_goal_metric_only.mp4\n- **Performance**: 71.2s average time since goal, 6.0s return time, 55 deliveries\n- **Best Achievement**: Generation 13 reached 28.5s average time since goal (116 deliveries)\n- **System State**: Unified movement system with gradient-based pheromone trail following\n- **Recent Recovery**: Fixed critical pheromone logic bug that caused complete system failure\n\n## Development Workflow
 
 ### Making Changes
 1. Modify relevant system in src/
@@ -176,12 +184,15 @@ cargo run
 - Text rendering still shows boxes instead of emoji characters in video overlay
 - Performance trade-off: realistic movement vs optimization metrics (currently prioritizing realism)
 
-### Recent Technical Achievements (Generation 11-15)
+### Recent Technical Achievements (Generation 11-20)
 - ✅ **Advanced Pheromone System**: 8-directional sensing with momentum-based trail following
+- ✅ **Unified Movement Framework**: Centralized speed management with MovementType enum (Gen 16)
+- ✅ **Gradient-Based Navigation**: Directional pheromone following to prevent trail bouncing (Gen 18+)
 - ✅ **Continuous Trail Rendering**: Eliminated dashed pheromone trails through path-based deposition  
 - ✅ **Behavioral Separation**: Smart context-aware navigation (direct vs trail-following)
 - ✅ **Realistic Motion**: Smooth, natural ant movement at biologically-inspired speeds
 - ✅ **Performance Breakthrough**: 63% improvement in goal achievement times (Generation 13)
+- ✅ **Critical Bug Recovery**: Diagnosed and fixed pheromone logic inversion (Gen 19→20 recovery)
 
 ## File Structure
 ```

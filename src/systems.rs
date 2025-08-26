@@ -6,6 +6,52 @@ use crate::config::*;
 use crate::pheromones::*;
 use crate::colors::*;
 
+/// Movement behavior types for unified speed management
+#[derive(Debug, Clone, Copy)]
+pub enum MovementType {
+    /// Ant carrying food returning to nest
+    CarryingFood,
+    /// Ant following pheromone trail to food
+    FollowingTrail,
+    /// Ant exploring randomly for food
+    Exploring,
+    /// Ant recovering from stuck state
+    StuckRecovery,
+    /// Legacy movement (to be phased out)
+    Legacy,
+}
+
+/// Unified function to set ant velocity based on movement type and direction
+fn set_ant_velocity(velocity: &mut Velocity, direction: f32, movement_type: MovementType) {
+    let speed = match movement_type {
+        MovementType::CarryingFood => 60.0,    // Steady speed when returning to nest
+        MovementType::FollowingTrail => 65.0,  // Slightly faster when following pheromone trails
+        MovementType::Exploring => 50.0,       // Slower when randomly exploring
+        MovementType::StuckRecovery => 60.0,   // Moderate speed when recovering from stuck
+        MovementType::Legacy => 85.0,          // Old speed for remaining legacy code
+    };
+    
+    velocity.x = direction.cos() * speed;
+    velocity.y = direction.sin() * speed;
+}
+
+/// Unified function to set ant velocity using a direction vector
+fn set_ant_velocity_from_vector(velocity: &mut Velocity, direction_vec: Vec2, movement_type: MovementType) {
+    let speed = match movement_type {
+        MovementType::CarryingFood => 60.0,
+        MovementType::FollowingTrail => 65.0,
+        MovementType::Exploring => 50.0,
+        MovementType::StuckRecovery => 60.0,
+        MovementType::Legacy => 90.0,  // Legacy vector-based movement
+    };
+    
+    if direction_vec.length() > 0.0 {
+        let normalized = direction_vec.normalize();
+        velocity.x = normalized.x * speed;
+        velocity.y = normalized.y * speed;
+    }
+}
+
 pub fn sensing_system(
     mut ants: Query<(&Transform, &mut AntState, &mut Velocity)>,
     pheromone_grid: Option<Res<PheromoneGrid>>,
@@ -36,32 +82,43 @@ pub fn sensing_system(
                 if distance_to_nest > 10.0 {
                     let nest_direction = to_nest.normalize();
                     ant.current_direction = nest_direction.y.atan2(nest_direction.x);
-                    velocity.x = nest_direction.x * 60.0;  // Reduced from 100 to 60
-                    velocity.y = nest_direction.y * 60.0;
+                    set_ant_velocity_from_vector(&mut velocity, nest_direction, MovementType::CarryingFood);
                     ant.behavior_state = AntBehaviorState::Following;
                 }
-                ant.sensing_timer = 0.5;
+                ant.sensing_timer = 0.3; // Faster sensing for food-carrying ants returning to nest
             } else {
-                // For exploring ants: use pheromone trails to find food with momentum bias
+                // For exploring ants: follow FOOD pheromones (trails left by successful ants who found food)
                 let pheromone_readings = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food);
                 let mut best_direction = ant.current_direction;
                 let mut max_pheromone = 0.0;
                 let mut found_trail = false;
                 
-                // Add momentum bias - prefer directions close to current direction
+                // Look for directional pheromone gradients instead of just strength
+                let current_pheromone = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food)[0]; // Sample at current position
+                
                 for (i, &pheromone_strength) in pheromone_readings.iter().enumerate() {
                     if pheromone_strength > 0.15 {
                         let angle = (i as f32) * std::f32::consts::TAU / 8.0;
                         
-                        // Calculate momentum bonus based on alignment with current direction
+                        // Calculate momentum bonus for maintaining direction
                         let angle_diff = (angle - ant.current_direction).abs();
                         let angle_diff_normalized = if angle_diff > std::f32::consts::PI { 
                             std::f32::consts::TAU - angle_diff 
                         } else { 
                             angle_diff 
                         };
-                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.6; // Increased from 0.3 to 0.6
-                        let effective_strength = pheromone_strength + momentum_bonus;
+                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.4; // Reduced from 0.6 to 0.4
+                        
+                        // Add gradient bonus for food pheromones - follow trails that lead toward food
+                        let gradient_bonus = if pheromone_strength > current_pheromone + 0.05 {
+                            0.3 // Bonus for following stronger food pheromone (toward food sources)
+                        } else if pheromone_strength < current_pheromone - 0.05 {
+                            -0.2 // Penalty for following weaker food pheromone (away from food)
+                        } else {
+                            0.0 // Neutral if pheromone strength is similar
+                        };
+                        
+                        let effective_strength = pheromone_strength + momentum_bonus + gradient_bonus;
                         
                         if effective_strength > max_pheromone {
                             max_pheromone = effective_strength;
@@ -81,9 +138,12 @@ pub fn sensing_system(
                     
                     // Gradual direction adjustment instead of immediate snap
                     ant.current_direction += smooth_angle_change * 0.4; // Reduced from 0.6 to 0.4 for smoother turns
-                    velocity.x = ant.current_direction.cos() * 65.0;  // Reduced from 110 to 65
-                    velocity.y = ant.current_direction.sin() * 65.0;
-                    ant.sensing_timer = 0.5;
+                    set_ant_velocity(&mut velocity, ant.current_direction, MovementType::FollowingTrail);
+                    
+                    // Adaptive sensing: faster response for strong trails, slower for weak ones
+                    let trail_strength_factor = (max_pheromone - 0.2) / 0.8; // Normalize 0.2-1.0 to 0.0-1.0
+                    let base_sensing_time = 0.2; // Much faster base sensing for trail following
+                    ant.sensing_timer = base_sensing_time + trail_strength_factor * 0.1; // 0.2-0.3s range
                 } else {
                     // No trail found - random exploration
                     ant.behavior_state = AntBehaviorState::Exploring;
@@ -91,9 +151,10 @@ pub fn sensing_system(
                     if ant.sensing_timer <= 0.0 {
                         let angle_change = (rand::random::<f32>() - 0.5) * 1.0;
                         ant.current_direction += angle_change;
-                        velocity.x = ant.current_direction.cos() * 50.0;  // Reduced from 85 to 50
-                        velocity.y = ant.current_direction.sin() * 50.0;
-                        ant.sensing_timer = 1.5 + rand::random::<f32>() * 0.8;
+                        set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
+                        
+                        // Faster exploration sensing for quicker food discovery
+                        ant.sensing_timer = 0.8 + rand::random::<f32>() * 0.4; // 0.8-1.2s range (was 1.5-2.3s)
                     }
                 }
             }
@@ -107,8 +168,7 @@ pub fn sensing_system(
                 if ant.stuck_timer > 2.0 {
                     // Randomize direction when stuck
                     ant.current_direction = rand::random::<f32>() * std::f32::consts::TAU;
-                    velocity.x = ant.current_direction.cos() * 60.0;   // Reduced from 100 to 60
-                    velocity.y = ant.current_direction.sin() * 60.0;
+                    set_ant_velocity(&mut velocity, ant.current_direction, MovementType::StuckRecovery);
                     ant.stuck_timer = 0.0;
                     ant.behavior_state = AntBehaviorState::Exploring;
                 }
@@ -277,11 +337,8 @@ pub fn food_collection_system(
                         
                         // Head toward nest
                         let direction = nest_pos - ant_pos;
-                        if direction.length() > 0.0 {
-                            let normalized = direction.normalize();
-                            velocity.x = normalized.x * 90.0;
-                            velocity.y = normalized.y * 90.0;
-                        }
+                        let direction_2d = Vec2::new(direction.x, direction.y);
+                        set_ant_velocity_from_vector(&mut velocity, direction_2d, MovementType::Legacy);
                         break;
                     }
                 }
@@ -317,8 +374,7 @@ pub fn food_collection_system(
                 ant.behavior_state = AntBehaviorState::Exploring;
                 ant.sensing_timer = 0.3;
                 ant.current_direction = rand::random::<f32>() * std::f32::consts::TAU;
-                velocity.x = ant.current_direction.cos() * 85.0;
-                velocity.y = ant.current_direction.sin() * 85.0;
+                set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Legacy);
             }
         }
     }
