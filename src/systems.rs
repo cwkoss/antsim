@@ -107,18 +107,25 @@ pub fn sensing_system(
                         } else { 
                             angle_diff 
                         };
-                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.4; // Reduced from 0.6 to 0.4
+                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.8; // Strong momentum to reduce path bouncing
+                        
+                        // Additional persistence bonus if ant has been following trails successfully
+                        let persistence_bonus = if ant.behavior_state == AntBehaviorState::Following {
+                            0.2 // Extra bias to continue following if already on a trail
+                        } else {
+                            0.0
+                        };
                         
                         // Add gradient bonus for food pheromones - follow trails that lead toward food
                         let gradient_bonus = if pheromone_strength > current_pheromone + 0.05 {
                             0.3 // Bonus for following stronger food pheromone (toward food sources)
                         } else if pheromone_strength < current_pheromone - 0.05 {
-                            -0.2 // Penalty for following weaker food pheromone (away from food)
+                            -0.2 // Strict penalty - abandon declining trails
                         } else {
                             0.0 // Neutral if pheromone strength is similar
                         };
                         
-                        let effective_strength = pheromone_strength + momentum_bonus + gradient_bonus;
+                        let effective_strength = pheromone_strength + momentum_bonus + gradient_bonus + persistence_bonus;
                         
                         if effective_strength > max_pheromone {
                             max_pheromone = effective_strength;
@@ -136,25 +143,29 @@ pub fn sensing_system(
                         if angle_diff > 0.0 { angle_diff - std::f32::consts::TAU } else { angle_diff + std::f32::consts::TAU }
                     } else { angle_diff };
                     
-                    // Gradual direction adjustment instead of immediate snap
-                    ant.current_direction += smooth_angle_change * 0.4; // Reduced from 0.6 to 0.4 for smoother turns
+                    // More gradual direction adjustment to stick to paths better
+                    ant.current_direction += smooth_angle_change * 0.25; // Reduced from 0.4 for path stability
                     set_ant_velocity(&mut velocity, ant.current_direction, MovementType::FollowingTrail);
                     
-                    // Adaptive sensing: faster response for strong trails, slower for weak ones
-                    let trail_strength_factor = (max_pheromone - 0.2) / 0.8; // Normalize 0.2-1.0 to 0.0-1.0
-                    let base_sensing_time = 0.2; // Much faster base sensing for trail following
-                    ant.sensing_timer = base_sensing_time + trail_strength_factor * 0.1; // 0.2-0.3s range
+                    // Longer sensing intervals on strong trails to maintain momentum
+                    let trail_strength_factor = (max_pheromone - 0.2).max(0.0) / 0.8; // Normalize 0.2-1.0 to 0.0-1.0
+                    ant.sensing_timer = if max_pheromone > 0.4 {
+                        0.5 + trail_strength_factor * 0.3 // 0.5-0.8s for strong trails - maintain momentum
+                    } else {
+                        0.2 + trail_strength_factor * 0.1 // 0.2-0.3s for weak trails - stay responsive
+                    };
                 } else {
                     // No trail found - random exploration
                     ant.behavior_state = AntBehaviorState::Exploring;
                     
                     if ant.sensing_timer <= 0.0 {
-                        let angle_change = (rand::random::<f32>() - 0.5) * 1.0;
+                        // Conservative exploration - moderate angle changes
+                        let angle_change = (rand::random::<f32>() - 0.5) * 1.2; // Balanced exploration
                         ant.current_direction += angle_change;
                         set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
                         
-                        // Faster exploration sensing for quicker food discovery
-                        ant.sensing_timer = 0.8 + rand::random::<f32>() * 0.4; // 0.8-1.2s range (was 1.5-2.3s)
+                        // Moderate exploration sensing for balanced discovery
+                        ant.sensing_timer = 0.6 + rand::random::<f32>() * 0.3; // 0.6-0.9s range - balanced exploration
                     }
                 }
             }
@@ -633,7 +644,7 @@ pub fn restart_system(
                     food_pickup_time: 0.0,
                     delivery_attempts: 0,
                     successful_deliveries: 0,
-                    startup_timer: 3.0,
+                    startup_timer: 2.0 + (i as f32) * 0.1, // Staggered startup: 2.0-5.5s range
                     has_found_food: false,
                     food_carry_start_time: 0.0,
                     last_goal_achievement_time: 0.0,

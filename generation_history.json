@@ -1,5 +1,5 @@
 {
-  "current_generation": 19,
+  "current_generation": 23,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -254,6 +254,70 @@
       },
       "timestamp": "2025-08-25T23:58:05Z",
       "video_filename": "0018_focus_optimization_on_average_time_since_goal_metric_only.mp4"
+    },
+    {
+      "description": "Focus optimization on average time since goal metric only",
+      "generation": 20,
+      "key_changes": [
+        "Generation 20 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.980286598205566,
+        "average_time_since_goal_seconds": 71.18509674072266,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 55,
+        "total_food_collected": 56.0
+      },
+      "timestamp": "2025-08-26T00:01:12Z",
+      "video_filename": "0019_focus_optimization_on_average_time_since_goal_metric_only.mp4"
+    },
+    {
+      "description": "Focus optimization on average time since goal metric only",
+      "generation": 21,
+      "key_changes": [
+        "Generation 21 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.880547523498535,
+        "average_time_since_goal_seconds": 80.96722412109375,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 46,
+        "total_food_collected": 48.0
+      },
+      "timestamp": "2025-08-26T01:07:53Z",
+      "video_filename": "0020_focus_optimization_on_average_time_since_goal_metric_only.mp4"
+    },
+    {
+      "description": "Focus optimization on average time since goal metric only",
+      "generation": 22,
+      "key_changes": [
+        "Generation 22 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.241281509399414,
+        "average_time_since_goal_seconds": 87.72733306884766,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 49,
+        "total_food_collected": 49.0
+      },
+      "timestamp": "2025-08-26T01:10:47Z",
+      "video_filename": "0021_focus_optimization_on_average_time_since_goal_metric_only.mp4"
+    },
+    {
+      "description": "Focus optimization on average time since goal metric only",
+      "generation": 23,
+      "key_changes": [
+        "Generation 23 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.300690650939941,
+        "average_time_since_goal_seconds": 80.66107177734375,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 54,
+        "total_food_collected": 54.0
+      },
+      "timestamp": "2025-08-26T01:13:13Z",
+      "video_filename": "0022_focus_optimization_on_average_time_since_goal_metric_only.mp4"
     }
   ],
   "next_planned_improvements": [

@@ -1,13 +1,13 @@
 {
-  "current_generation": 20,
+  "current_generation": 24,
   "description": "Focus optimization on average time since goal metric only",
   "performance_metrics": {
-    "average_return_time_seconds": 5.980286598205566,
-    "average_time_since_goal_seconds": 71.18509674072266,
+    "average_return_time_seconds": 6.134128093719482,
+    "average_time_since_goal_seconds": 27.401063919067383,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 55,
-    "total_food_collected": 56.0
+    "successful_deliveries": 107,
+    "total_food_collected": 113.0
   },
-  "timestamp": "2025-08-26T00:01:12Z",
-  "video_filename": "0019_focus_optimization_on_average_time_since_goal_metric_only.mp4"
+  "timestamp": "2025-08-26T01:27:44Z",
+  "video_filename": "0023_focus_optimization_on_average_time_since_goal_metric_only.mp4"
 }
