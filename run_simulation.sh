@@ -5,6 +5,29 @@
 
 echo "🐜 Starting Ant Colony Simulation with Automated Video Generation"
 echo "================================================================"
+echo ""
+
+# Prompt for generation description
+echo "📝 Please provide a description for this generation (what changes/optimizations are being tested):"
+read -p "Generation description: " GENERATION_DESCRIPTION
+
+if [ -z "$GENERATION_DESCRIPTION" ]; then
+    echo "⚠️  No description provided. Using default description."
+    GENERATION_DESCRIPTION="Standard optimization iteration"
+fi
+
+echo "📋 This generation will be labeled: '$GENERATION_DESCRIPTION'"
+echo ""
+
+# Update generation description in generation_info.json before running simulation
+if [ -f "generation_info.json" ]; then
+    echo "📝 Updating generation description..."
+    sed -i "s/\"description\": \"[^\"]*\"/\"description\": \"$GENERATION_DESCRIPTION\"/" generation_info.json
+    echo "✅ Description updated in generation_info.json"
+else
+    echo "⚠️ generation_info.json not found - description will use simulation default"
+fi
+echo ""
 
 # Create directories if they don't exist
 if [ ! -d "videos" ]; then
@@ -90,7 +113,7 @@ if [ -f "generation_info.json" ]; then
     # Simple sed replacement (not as robust as PowerShell version)
     sed -i "s/\"current_generation\": $CURRENT_GEN/\"current_generation\": $NEW_GEN/" generation_info.json
     sed -i "s/\"timestamp\": \"[^\"]*\"/\"timestamp\": \"$TIMESTAMP\"/" generation_info.json
-    # Description is now managed by the simulation itself
+    # Description was already updated before simulation
     
     echo "✅ Generation incremented to $NEW_GEN"
 else

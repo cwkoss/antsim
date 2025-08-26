@@ -111,22 +111,24 @@ cargo run
 - Immediate recording start for complete behavior capture
 - Proper coordinate transformation and pixel mapping\n- **Video Naming Convention**: Fixed to use established pattern `####_description.mp4` (e.g., 0007_codebase_cleanup_generation.mp4)\n- **Cleanup**: Removed debug output and unused modules for cleaner console output
 
-### Current Status (Generation 20)\n- **Latest Video**: 0019_focus_optimization_on_average_time_since_goal_metric_only.mp4\n- **Performance**: 71.2s average time since goal, 6.0s return time, 55 deliveries\n- **Best Achievement**: Generation 13 reached 28.5s average time since goal (116 deliveries)\n- **System State**: Unified movement system with gradient-based pheromone trail following\n- **Recent Recovery**: Fixed critical pheromone logic bug that caused complete system failure\n\n## Development Workflow
+### Current Status (Generation 25)\n- **Latest Video**: 0024_standard_optimization_iteration.mp4\n- **Performance**: 30.6s average time since goal, 6.1s return time, 126 deliveries\n- **Major Breakthrough**: Generation 24 achieved 27.4s average time (matches best historical performance)\n- **System State**: Path persistence optimization with strong momentum bias and adaptive sensing\n- **Recent Achievement**: Solved critical path bouncing issue through momentum-based trail following\n\n## Development Workflow
 
 ### Making Changes
 1. Modify relevant system in src/
 2. **ALWAYS use the wrapper script**: `./run_simulation.sh` (requires Git Bash on Windows)
-3. Let simulation complete its 90-second cycle and auto-convert to video
-4. Review generated MP4 in videos/ directory with updated "AvgGoalTime" overlay
-5. Analyze performance metrics from console output
-6. **Commit all changes to git at the end of every development cycle**
+3. **Provide meaningful generation description** when prompted by script (e.g., "Path persistence optimization", "Startup delay tuning")
+4. Let simulation complete its 90-second cycle and auto-convert to video
+5. Review generated MP4 in videos/ directory with custom description in video overlay
+6. Analyze performance metrics from console output
+7. **Commit all changes to git at the end of every development cycle**
 
 **IMPORTANT**: The bash wrapper script is now the standard method for ALL simulation runs. It automatically:
+- **Prompts for generation description** (used in video overlay and filename)  
 - Runs the 90-second simulation
-- Converts frames to MP4 with proper naming (fixed for Windows/Git Bash compatibility)
+- Converts frames to MP4 with custom naming based on description
 - Organizes files into videos/ and debug/ directories
-- Updates generation info
-- Displays the updated video overlay with "AvgGoalTime" as primary metric
+- Updates generation info with user-provided description
+- Displays the updated video overlay with custom description and "AvgGoalTime" as primary metric
 
 **Manual `cargo run` should only be used for emergency debugging.**
 
