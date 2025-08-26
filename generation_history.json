@@ -1,5 +1,5 @@
 {
-  "current_generation": 25,
+  "current_generation": 26,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -350,6 +350,22 @@
       },
       "timestamp": "2025-08-26T01:37:52Z",
       "video_filename": "0024_standard_optimization_iteration.mp4"
+    },
+    {
+      "description": "Faster nest pheromone decay to prevent starting area congestion",
+      "generation": 26,
+      "key_changes": [
+        "Generation 26 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.462307453155518,
+        "average_time_since_goal_seconds": 33.152713775634766,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 81,
+        "total_food_collected": 84.0
+      },
+      "timestamp": "2025-08-26T02:57:48Z",
+      "video_filename": "0025_stronger_initial_pheromone_trails_with_sharper_distance_decay.mp4"
     }
   ],
   "next_planned_improvements": [
