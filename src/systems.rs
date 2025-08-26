@@ -88,6 +88,19 @@ pub fn sensing_system(
                 ant.sensing_timer = 0.3; // Faster sensing for food-carrying ants returning to nest
             } else {
                 // For exploring ants: follow FOOD pheromones (trails left by successful ants who found food)
+                
+                // ANTI-CLUSTERING: Near-nest exclusion zone - use simple radial exploration instead of pheromone following
+                let distance_from_nest = Vec2::new(pos.x, pos.y).length();
+                if distance_from_nest < 100.0 {
+                    // Near nest: use radial exploration to get away from crowded nest area
+                    let outward_direction = Vec2::new(pos.x, pos.y).normalize();
+                    ant.current_direction = outward_direction.y.atan2(outward_direction.x);
+                    set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
+                    ant.sensing_timer = 1.5; // Long commitment to outward movement
+                    ant.behavior_state = AntBehaviorState::Exploring;
+                    continue;
+                }
+                
                 let pheromone_readings = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food);
                 let mut best_direction = ant.current_direction;
                 let mut max_pheromone = 0.0;
@@ -107,7 +120,7 @@ pub fn sensing_system(
                         } else { 
                             angle_diff 
                         };
-                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.95; // Maximum momentum for ant-like directional commitment
+                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 1.2; // Increased momentum for better trail commitment
                         
                         // Additional persistence bonus if ant has been following trails successfully
                         let persistence_bonus = if ant.behavior_state == AntBehaviorState::Following {
@@ -116,11 +129,24 @@ pub fn sensing_system(
                             0.0
                         };
                         
-                        // ADVANCED: Predictive gradient analysis - look ahead along this direction
-                        let lookahead_distance = 15.0; // Back to Generation 43 successful distance
-                        let lookahead_x = pos.x + angle.cos() * lookahead_distance;
-                        let lookahead_y = pos.y + angle.sin() * lookahead_distance;
-                        let lookahead_pheromone = grid.sample_directional(lookahead_x, lookahead_y, angle, 3.0, PheromoneType::Food);
+                        // TRAIL DIRECTION DETECTION: Compare pheromone strength ahead vs behind to determine trail direction
+                        let search_distance = 20.0;
+                        let ahead_x = pos.x + angle.cos() * search_distance;
+                        let ahead_y = pos.y + angle.sin() * search_distance;
+                        let ahead_pheromone = grid.sample_directional(ahead_x, ahead_y, angle, 5.0, PheromoneType::Food);
+                        
+                        let behind_x = pos.x - angle.cos() * search_distance;
+                        let behind_y = pos.y - angle.sin() * search_distance;
+                        let behind_pheromone = grid.sample_directional(behind_x, behind_y, angle, 5.0, PheromoneType::Food);
+                        
+                        // Trail direction bonus: stronger reward for following toward stronger pheromone (toward food)
+                        let trail_direction_bonus = if ahead_pheromone > behind_pheromone + 0.05 {
+                            0.8 // Strong bonus for following trail toward food
+                        } else if behind_pheromone > ahead_pheromone + 0.05 {
+                            -0.4 // Penalty for going away from food
+                        } else {
+                            0.2 // Neutral bonus for unclear direction
+                        };
                         
                         // ADVANCED: Trail width analysis - check perpendicular directions for trail width
                         let perp_angle_1 = angle + std::f32::consts::PI / 2.0;
@@ -134,27 +160,30 @@ pub fn sensing_system(
                         let trail_width_strength = (left_pheromone + right_pheromone + near_left + near_right) / 4.0;
                         let trail_width_factor = 1.0 + trail_width_strength * 0.2; // Enhanced width bonus for well-established trails
                         
-                        // Enhanced gradient bonus with predictive element - FIXED FOR FRESH TRAILS
-                        let immediate_gradient = pheromone_strength - current_pheromone;
-                        let predictive_gradient = lookahead_pheromone - pheromone_strength;
-                        
-                        let gradient_bonus = if immediate_gradient > 0.05 {
-                            // Strong immediate gradient means we're on a good trail
-                            if lookahead_pheromone < 0.1 && pheromone_strength > 0.3 {
-                                // FRESH TRAIL BONUS: Strong current pheromone but weak ahead = trail establishment
-                                0.6 // Revert to original fresh trail bonus
-                            } else if predictive_gradient >= -0.02 {
-                                // Established trail with good lookahead
-                                0.4 + predictive_gradient * 0.8 // Revert established trail bonus
-                            } else {
-                                // Good immediate gradient but declining ahead - still valuable
-                                0.35 // Reduced but still positive bonus
-                            }
-                        } else if immediate_gradient < -0.05 && predictive_gradient < -0.05 {
-                            -0.3 // Penalty only for consistently declining trails
-                        } else if immediate_gradient < -0.05 {
-                            -0.15 // Reduced penalty for declining trails
+                        // LINE-FOLLOWING: Detect if ant is off-center and bias toward trail center
+                        let left_side_strength = (left_pheromone + near_left) / 2.0;
+                        let right_side_strength = (right_pheromone + near_right) / 2.0;
+                        let centering_bonus = if left_side_strength > right_side_strength + 0.1 {
+                            // Trail is stronger on left side, bias slightly left to center on trail
+                            if (angle - ant.current_direction).abs() < std::f32::consts::PI / 4.0 { 0.3 } else { 0.0 }
+                        } else if right_side_strength > left_side_strength + 0.1 {
+                            // Trail is stronger on right side, bias slightly right to center on trail  
+                            if (angle - ant.current_direction).abs() < std::f32::consts::PI / 4.0 { 0.3 } else { 0.0 }
                         } else {
+                            0.0 // Already centered on trail
+                        };
+                        
+                        // SIMPLIFIED gradient system - reduce complexity to prevent oscillation
+                        let immediate_gradient = pheromone_strength - current_pheromone;
+                        
+                        let gradient_bonus = if immediate_gradient > 0.1 {
+                            // Clear improvement - moving toward stronger pheromone
+                            0.4
+                        } else if immediate_gradient < -0.1 {
+                            // Clear decline - moving away from strong pheromone
+                            -0.3
+                        } else {
+                            // Marginal differences - neutral to reduce micro-oscillation
                             0.0
                         };
                         
@@ -165,7 +194,7 @@ pub fn sensing_system(
                             momentum_bonus
                         };
                         
-                        let effective_strength = pheromone_strength * trail_width_factor + hybrid_momentum + gradient_bonus + persistence_bonus;
+                        let effective_strength = pheromone_strength * trail_width_factor + hybrid_momentum + gradient_bonus + persistence_bonus + trail_direction_bonus + centering_bonus;
                         
                         if effective_strength > max_pheromone {
                             max_pheromone = effective_strength;
@@ -190,9 +219,9 @@ pub fn sensing_system(
                     // Back to Generation 51 successful sensing intervals
                     let trail_strength_factor = (max_pheromone - 0.2).max(0.0) / 0.8;
                     ant.sensing_timer = if max_pheromone > 0.4 {
-                        0.5 + trail_strength_factor * 0.3 // 0.5-0.8s for strong trails - maintain momentum
+                        1.0 + trail_strength_factor * 0.5 // 1.0-1.5s for strong trails - much more commitment
                     } else {
-                        0.2 + trail_strength_factor * 0.1 // 0.2-0.3s for weak trails - stay responsive
+                        0.8 + trail_strength_factor * 0.4 // 0.8-1.2s for weak trails - less frequent sensing
                     };
                 } else {
                     // No trail found - random exploration
@@ -400,9 +429,45 @@ pub fn pheromone_deposit_system(
 
 pub fn pheromone_update_system(
     mut pheromone_grid: Option<ResMut<PheromoneGrid>>,
+    food_sources: Query<&Transform, With<FoodSource>>,
     config: Res<SimConfig>,
 ) {
     if let Some(ref mut grid) = pheromone_grid {
+        // FOOD SCENT: Food sources naturally emit pheromones in smooth circular gradient
+        for food_transform in food_sources.iter() {
+            let food_pos = food_transform.translation;
+            
+            let max_radius = 60.0;
+            let max_strength = 8.0; // Strong natural scent at center
+            
+            // Create smooth circular gradient using polar coordinates
+            // More emission points closer to center for natural concentration
+            for ring in 0..=12 { // 13 concentric rings from center to edge
+                let ring_radius = (ring as f32 / 12.0) * max_radius;
+                let points_in_ring = if ring == 0 { 
+                    1 // Center point
+                } else { 
+                    (ring * 6).max(8) // More points in outer rings for coverage
+                };
+                
+                for point in 0..points_in_ring {
+                    let angle = (point as f32 / points_in_ring as f32) * std::f32::consts::TAU;
+                    
+                    let emit_x = food_pos.x + ring_radius * angle.cos();
+                    let emit_y = food_pos.y + ring_radius * angle.sin();
+                    
+                    // Smooth falloff: strongest at center, weaker at edges
+                    let distance_factor = ring_radius / max_radius;
+                    let falloff_factor = (1.0 - distance_factor * distance_factor).max(0.0);
+                    let strength = max_strength * falloff_factor;
+                    
+                    if strength > 0.2 {
+                        grid.deposit(emit_x, emit_y, PheromoneType::Food, strength * 0.025);
+                    }
+                }
+            }
+        }
+        
         let evap_rates = (config.evap_food, config.evap_nest, config.evap_alarm);
         let diff_rates = (config.diff_food, config.diff_nest, config.diff_alarm);
         
@@ -432,7 +497,7 @@ pub fn food_collection_system(
                 let food_pos = food_transform.translation;
                 let distance = ant_pos.distance(food_pos);
                 
-                if distance < 25.0 && food.amount > 0.0 {
+                if distance < 25.0 && food.amount > 0.0 { // Restored to original pickup distance
                     // Start collecting food
                     ant.food_collection_timer = 0.3;
                     velocity.x = 0.0;
@@ -452,7 +517,7 @@ pub fn food_collection_system(
                     let food_pos = food_transform.translation;
                     let distance = ant_pos.distance(food_pos);
                     
-                    if distance < 25.0 && food.amount > 0.0 {
+                    if distance < 25.0 && food.amount > 0.0 { // Restored to original pickup distance
                         let take_amount = 1.0;
                         food.amount -= take_amount;
                         ant.carrying_food = true;

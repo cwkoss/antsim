@@ -41,7 +41,7 @@ impl Default for SimConfig {
             base_exploration_noise: 0.02,    // Ultra-low noise for maximum focus
             follow_gain: 3.0,    // Maximum pheromone sensitivity for precise trail following
             lay_rate_food: 40.0,    // OPTIMIZATION 3: Doubled initial pheromone deposition
-            lay_rate_nest: 50.0,    // OPTIMIZATION 3: Doubled nest pheromone deposition
+            lay_rate_nest: 0.0,     // EXPERIMENT: Zero nest pheromone to eliminate trail confusion
             food_quality_weight: 1.0,
             detection_threshold: 0.001,  // Back to Generation 37 value
             saturation_limit: 10.0,

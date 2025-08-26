@@ -1,13 +1,13 @@
 {
-  "current_generation": 62,
-  "description": "Final video fix",
+  "current_generation": 68,
+  "description": "Fixed food scent",
   "performance_metrics": {
-    "average_return_time_seconds": 5.576876640319824,
-    "average_time_since_goal_seconds": 55.060264587402344,
+    "average_return_time_seconds": 6.010315895080566,
+    "average_time_since_goal_seconds": 15.156359672546387,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 54,
-    "total_food_collected": 54.0
+    "successful_deliveries": 165,
+    "total_food_collected": 177.0
   },
-  "timestamp": "2025-08-26T21:53:53Z",
-  "video_filename": "0061_final_video_fix.mp4"
+  "timestamp": "2025-08-26T22:33:48Z",
+  "video_filename": "0067_fixed_food_scent.mp4"
 }

@@ -1,5 +1,5 @@
 {
-  "current_generation": 61,
+  "current_generation": 67,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -926,6 +926,102 @@
       },
       "timestamp": "2025-08-26T21:51:44Z",
       "video_filename": "0060_fixed.mp4"
+    },
+    {
+      "description": "Anti-clustering fixes: near-nest exclusion zone, reduced sensing frequency, simplified gradient logic",
+      "generation": 62,
+      "key_changes": [
+        "Generation 62 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.576876640319824,
+        "average_time_since_goal_seconds": 55.060264587402344,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 54,
+        "total_food_collected": 54.0
+      },
+      "timestamp": "2025-08-26T21:53:53Z",
+      "video_filename": "0061_final_video_fix.mp4"
+    },
+    {
+      "description": "EXPERIMENT: Zero nest pheromone deposition - eliminate trail confusion chaos",
+      "generation": 63,
+      "key_changes": [
+        "Generation 63 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.964078903198242,
+        "average_time_since_goal_seconds": 53.43083190917969,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 63,
+        "total_food_collected": 64.0
+      },
+      "timestamp": "2025-08-26T22:16:00Z",
+      "video_filename": "0062_anti-clustering_fixes.mp4"
+    },
+    {
+      "description": "Enhanced trail-following: directional detection, increased momentum, line-following centering",
+      "generation": 64,
+      "key_changes": [
+        "Generation 64 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.827322483062744,
+        "average_time_since_goal_seconds": 47.9720458984375,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 69,
+        "total_food_collected": 70.0
+      },
+      "timestamp": "2025-08-26T22:19:12Z",
+      "video_filename": "0063_experiment.mp4"
+    },
+    {
+      "description": "Trail gap fixes: reduced pickup distance (25→8) and added continuous food scent emission",
+      "generation": 65,
+      "key_changes": [
+        "Generation 65 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.296327590942383,
+        "average_time_since_goal_seconds": 58.98420333862305,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 76,
+        "total_food_collected": 77.0
+      },
+      "timestamp": "2025-08-26T22:23:57Z",
+      "video_filename": "0064_enhanced_trail-following.mp4"
+    },
+    {
+      "description": "Improved food scent: reverted pickup distance (8→25) and expanded scent radius (15→60) with strong falloff",
+      "generation": 66,
+      "key_changes": [
+        "Generation 66 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.457634925842285,
+        "average_time_since_goal_seconds": 56.84931182861328,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 46,
+        "total_food_collected": 48.0
+      },
+      "timestamp": "2025-08-26T22:27:49Z",
+      "video_filename": "0065_trail_gap_fixes.mp4"
+    },
+    {
+      "description": "Fixed food scent: proper circular gradient using polar coordinates, center-concentrated with smooth falloff",
+      "generation": 67,
+      "key_changes": [
+        "Generation 67 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.906491756439209,
+        "average_time_since_goal_seconds": 30.524757385253903,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 96,
+        "total_food_collected": 106.0
+      },
+      "timestamp": "2025-08-26T22:30:37Z",
+      "video_filename": "0066_improved_food_scent.mp4"
     }
   ],
   "next_planned_improvements": [
