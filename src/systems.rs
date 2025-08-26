@@ -107,11 +107,11 @@ pub fn sensing_system(
                         } else { 
                             angle_diff 
                         };
-                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.9;
+                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.95; // Maximum momentum for ant-like directional commitment
                         
                         // Additional persistence bonus if ant has been following trails successfully
                         let persistence_bonus = if ant.behavior_state == AntBehaviorState::Following {
-                            0.2
+                            0.25 // Enhanced commitment to successful trail following
                         } else {
                             0.0
                         };
@@ -128,14 +128,18 @@ pub fn sensing_system(
                         let side_distance = 8.0;
                         let left_pheromone = grid.sample_directional(pos.x, pos.y, perp_angle_1, side_distance, PheromoneType::Food);
                         let right_pheromone = grid.sample_directional(pos.x, pos.y, perp_angle_2, side_distance, PheromoneType::Food);
-                        let trail_width_factor = 1.0 + (left_pheromone + right_pheromone) * 0.15; // More conservative trail width bonus
+                        // Enhanced trail width detection: check both near and far perpendicular positions
+                        let near_left = grid.sample_directional(pos.x, pos.y, perp_angle_1, 5.0, PheromoneType::Food);
+                        let near_right = grid.sample_directional(pos.x, pos.y, perp_angle_2, 5.0, PheromoneType::Food);
+                        let trail_width_strength = (left_pheromone + right_pheromone + near_left + near_right) / 4.0;
+                        let trail_width_factor = 1.0 + trail_width_strength * 0.2; // Enhanced width bonus for well-established trails
                         
                         // Enhanced gradient bonus with predictive element
                         let immediate_gradient = pheromone_strength - current_pheromone;
                         let predictive_gradient = lookahead_pheromone - pheromone_strength;
                         
                         let gradient_bonus = if immediate_gradient > 0.05 && predictive_gradient >= -0.02 {
-                            0.4 + predictive_gradient * 0.8 // More conservative predictive bonus
+                            0.4 + predictive_gradient * 0.8 // Back to Generation 43 successful value
                         } else if immediate_gradient > 0.05 {
                             0.3 // Medium bonus for upward gradient only
                         } else if immediate_gradient < -0.05 && predictive_gradient < -0.05 {
@@ -147,10 +151,8 @@ pub fn sensing_system(
                         };
                         
                         // Smart momentum-gradient hybrid: reduce momentum when gradient is very strong
-                        let hybrid_momentum = if immediate_gradient > 0.12 {
-                            momentum_bonus * 0.6 // More aggressive momentum reduction for strong gradients
-                        } else if immediate_gradient > 0.08 {
-                            momentum_bonus * 0.8 // Medium momentum reduction for moderate gradients
+                        let hybrid_momentum = if immediate_gradient > 0.15 {
+                            momentum_bonus * 0.7 // Back to Generation 43 successful value
                         } else {
                             momentum_bonus
                         };

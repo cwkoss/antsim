@@ -38,8 +38,8 @@ impl Default for SimConfig {
             diff_nest: 0.05,        // OPTIMIZATION 2: More nest diffusion
             diff_alarm: 0.2,
             
-            base_exploration_noise: 0.03,    // Further reduced noise for very focused movement
-            follow_gain: 2.5,    // Increased sensitivity for pheromone detection
+            base_exploration_noise: 0.02,    // Ultra-low noise for maximum focus
+            follow_gain: 3.0,    // Maximum pheromone sensitivity for precise trail following
             lay_rate_food: 40.0,    // OPTIMIZATION 3: Doubled initial pheromone deposition
             lay_rate_nest: 50.0,    // OPTIMIZATION 3: Doubled nest pheromone deposition
             food_quality_weight: 1.0,

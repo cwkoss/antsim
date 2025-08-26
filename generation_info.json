@@ -1,13 +1,13 @@
 {
-  "current_generation": 45,
-  "description": "Enhanced gradient-momentum hybrid with tiered momentum reduction",
+  "current_generation": 49,
+  "description": "Maximum commitment",
   "performance_metrics": {
-    "average_return_time_seconds": 6.258134841918945,
-    "average_time_since_goal_seconds": 52.869873046875,
+    "average_return_time_seconds": 6.404271125793457,
+    "average_time_since_goal_seconds": 49.62916564941406,
     "simulation_duration_seconds": 90,
     "successful_deliveries": 74,
-    "total_food_collected": 76.0
+    "total_food_collected": 82.0
   },
-  "timestamp": "2025-08-26T16:54:28Z",
-  "video_filename": "0044_enhanced_gradient-momentum_hybrid_with_tiered_momentum_reduction.mp4"
+  "timestamp": "2025-08-26T17:22:05Z",
+  "video_filename": "0048_maximum_commitment.mp4"
 }

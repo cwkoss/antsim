@@ -1,5 +1,5 @@
 {
-  "current_generation": 44,
+  "current_generation": 48,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -654,6 +654,70 @@
       },
       "timestamp": "2025-08-26T16:52:20Z",
       "video_filename": "0043_optimized_lookahead_distance.mp4"
+    },
+    {
+      "description": "Enhanced predictive bonus: stronger trail commitment with 1.0x multiplier",
+      "generation": 45,
+      "key_changes": [
+        "Generation 45 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.258134841918945,
+        "average_time_since_goal_seconds": 52.869873046875,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 74,
+        "total_food_collected": 76.0
+      },
+      "timestamp": "2025-08-26T16:54:28Z",
+      "video_filename": "0044_enhanced_gradient-momentum_hybrid_with_tiered_momentum_reduction.mp4"
+    },
+    {
+      "description": "Enhanced trail width detection: dual-distance perpendicular sampling",
+      "generation": 46,
+      "key_changes": [
+        "Generation 46 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.028496265411377,
+        "average_time_since_goal_seconds": 48.07011413574219,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 78,
+        "total_food_collected": 86.0
+      },
+      "timestamp": "2025-08-26T17:15:32Z",
+      "video_filename": "0045_enhanced_predictive_bonus.mp4"
+    },
+    {
+      "description": "Ultra-focused movement: noise 0.02 + follow_gain 3.0",
+      "generation": 47,
+      "key_changes": [
+        "Generation 47 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.831571102142334,
+        "average_time_since_goal_seconds": 46.45957565307617,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 76,
+        "total_food_collected": 88.0
+      },
+      "timestamp": "2025-08-26T17:17:45Z",
+      "video_filename": "0046_enhanced_trail_width_detection.mp4"
+    },
+    {
+      "description": "Maximum commitment: momentum 0.95 + persistence 0.25",
+      "generation": 48,
+      "key_changes": [
+        "Generation 48 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.764625072479248,
+        "average_time_since_goal_seconds": 43.248016357421875,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 69,
+        "total_food_collected": 74.0
+      },
+      "timestamp": "2025-08-26T17:19:49Z",
+      "video_filename": "0047_ultra-focused_movement.mp4"
     }
   ],
   "next_planned_improvements": [
