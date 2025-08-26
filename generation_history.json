@@ -1,5 +1,5 @@
 {
-  "current_generation": 48,
+  "current_generation": 49,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -718,6 +718,22 @@
       },
       "timestamp": "2025-08-26T17:19:49Z",
       "video_filename": "0047_ultra-focused_movement.mp4"
+    },
+    {
+      "description": "BREAKTHROUGH: Fresh trail fix - reward new trail establishment instead of penalizing it",
+      "generation": 49,
+      "key_changes": [
+        "Generation 49 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.404271125793457,
+        "average_time_since_goal_seconds": 49.62916564941406,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 74,
+        "total_food_collected": 82.0
+      },
+      "timestamp": "2025-08-26T17:22:05Z",
+      "video_filename": "0048_maximum_commitment.mp4"
     }
   ],
   "next_planned_improvements": [

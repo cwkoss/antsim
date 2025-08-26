@@ -53,13 +53,13 @@ fn set_ant_velocity_from_vector(velocity: &mut Velocity, direction_vec: Vec2, mo
 }
 
 pub fn sensing_system(
-    mut ants: Query<(&Transform, &mut AntState, &mut Velocity)>,
+    mut ants: Query<(Entity, &Transform, &mut AntState, &mut Velocity, Option<&DebugAnt>)>,
     pheromone_grid: Option<Res<PheromoneGrid>>,
     config: Res<SimConfig>,
     time: Res<Time>,
 ) {
     if let Some(grid) = pheromone_grid {
-        for (transform, mut ant, mut velocity) in ants.iter_mut() {
+        for (entity, transform, mut ant, mut velocity, debug_ant) in ants.iter_mut() {
             let pos = transform.translation;
             let delta_time = time.delta_seconds();
             
@@ -134,16 +134,24 @@ pub fn sensing_system(
                         let trail_width_strength = (left_pheromone + right_pheromone + near_left + near_right) / 4.0;
                         let trail_width_factor = 1.0 + trail_width_strength * 0.2; // Enhanced width bonus for well-established trails
                         
-                        // Enhanced gradient bonus with predictive element
+                        // Enhanced gradient bonus with predictive element - FIXED FOR FRESH TRAILS
                         let immediate_gradient = pheromone_strength - current_pheromone;
                         let predictive_gradient = lookahead_pheromone - pheromone_strength;
                         
-                        let gradient_bonus = if immediate_gradient > 0.05 && predictive_gradient >= -0.02 {
-                            0.4 + predictive_gradient * 0.8 // Back to Generation 43 successful value
-                        } else if immediate_gradient > 0.05 {
-                            0.3 // Medium bonus for upward gradient only
+                        let gradient_bonus = if immediate_gradient > 0.05 {
+                            // Strong immediate gradient means we're on a good trail
+                            if lookahead_pheromone < 0.1 && pheromone_strength > 0.3 {
+                                // FRESH TRAIL BONUS: Strong current pheromone but weak ahead = trail establishment
+                                0.6 // Major bonus for following fresh, strong trails
+                            } else if predictive_gradient >= -0.02 {
+                                // Established trail with good lookahead
+                                0.4 + predictive_gradient * 0.8
+                            } else {
+                                // Good immediate gradient but declining ahead - still valuable
+                                0.35 // Reduced but still positive bonus
+                            }
                         } else if immediate_gradient < -0.05 && predictive_gradient < -0.05 {
-                            -0.3 // Reduced penalty for consistently declining trails
+                            -0.3 // Penalty only for consistently declining trails
                         } else if immediate_gradient < -0.05 {
                             -0.15 // Reduced penalty for declining trails
                         } else {
@@ -234,6 +242,65 @@ pub fn sensing_system(
                 ant.stuck_timer = 0.0;
             }
             ant.last_position = current_pos;
+        }
+        
+        // Debug logging for debug ants
+        static mut LAST_DEBUG_LOG: f32 = 0.0;
+        let current_time = time.elapsed_seconds();
+        
+        unsafe {
+            if current_time - LAST_DEBUG_LOG > 2.0 {
+                LAST_DEBUG_LOG = current_time;
+                
+                for (entity, transform, ant, velocity, debug_ant) in ants.iter() {
+                    if let Some(debug_marker) = debug_ant {
+                        let pos = transform.translation;
+                        
+                        // Calculate distance to nest and nearest food
+                        let dist_to_nest = Vec2::new(pos.x, pos.y).length();
+                        
+                        // Get pheromone readings at current position
+                        let pheromone_readings = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food);
+                        let current_pheromone = pheromone_readings[0];
+                        let max_pheromone = pheromone_readings.iter().fold(0.0f32, |a, &b| a.max(b));
+                        
+                        // Time since last goal achievement
+                        let time_since_goal = if ant.last_goal_achievement_time > 0.0 {
+                            current_time - ant.last_goal_achievement_time
+                        } else {
+                            current_time - ant.startup_timer.max(0.0)
+                        };
+                        
+                        println!("🐜 DEBUG ANT #{} @ T={:.1}s | Pos=({:.0},{:.0}) DistToNest={:.0} | State={:?} | Carrying={} | TimeSinceGoal={:.1}s", 
+                            debug_marker.ant_id, current_time, pos.x, pos.y, dist_to_nest, ant.behavior_state, ant.carrying_food, time_since_goal);
+                        
+                        println!("   📡 Pheromones: Current={:.3} Max={:.3} | Direction={:.2}rad | Vel=({:.1},{:.1}) | SensingTimer={:.2}s", 
+                            current_pheromone, max_pheromone, ant.current_direction, velocity.x, velocity.y, ant.sensing_timer);
+                        
+                        if ant.stuck_timer > 1.0 {
+                            println!("   ⚠️ STUCK for {:.1}s | Last movement distance: {:.1}", ant.stuck_timer, 
+                                Vec2::new(pos.x, pos.y).distance(ant.last_position));
+                        }
+                        
+                        if ant.behavior_state == AntBehaviorState::Following {
+                            // Look ahead for predictive analysis
+                            let lookahead_x = pos.x + ant.current_direction.cos() * 15.0;
+                            let lookahead_y = pos.y + ant.current_direction.sin() * 15.0;
+                            let lookahead_pheromone = grid.sample_directional(lookahead_x, lookahead_y, ant.current_direction, 3.0, PheromoneType::Food);
+                            let immediate_gradient = max_pheromone - current_pheromone;
+                            let predictive_gradient = lookahead_pheromone - max_pheromone;
+                            
+                            println!("   🔮 Trail Analysis: ImmediateGrad={:.3} PredictiveGrad={:.3} LookaheadPheromone={:.3}", 
+                                immediate_gradient, predictive_gradient, lookahead_pheromone);
+                        }
+                        
+                        println!("   📊 Stats: Deliveries={} Attempts={} HasFoundFood={} | ConsecutiveGoodTrail={:.1}s", 
+                            ant.successful_deliveries, ant.delivery_attempts, ant.has_found_food, ant.consecutive_good_trail_time);
+                        
+                        println!();
+                    }
+                }
+            }
         }
     }
 }
@@ -342,7 +409,7 @@ pub fn pheromone_update_system(
 }
 
 pub fn food_collection_system(
-    mut ants: Query<(&Transform, &mut AntState, &mut Velocity)>,
+    mut ants: Query<(Entity, &Transform, &mut AntState, &mut Velocity, Option<&DebugAnt>)>,
     mut food_sources: Query<(&Transform, &mut FoodSource)>,
     nests: Query<&Transform, (With<Nest>, Without<AntState>)>,
     mut performance_tracker: ResMut<PerformanceTracker>,
@@ -354,7 +421,7 @@ pub fn food_collection_system(
         Vec3::ZERO
     };
     
-    for (ant_transform, mut ant, mut velocity) in ants.iter_mut() {
+    for (entity, ant_transform, mut ant, mut velocity, debug_ant) in ants.iter_mut() {
         let ant_pos = ant_transform.translation;
         
         if !ant.carrying_food && ant.food_collection_timer <= 0.0 {
@@ -393,6 +460,13 @@ pub fn food_collection_system(
                         ant.last_goal_achievement_time = time.elapsed_seconds();
                         performance_tracker.total_food_collected += take_amount;
                         
+                        // Debug logging for food pickup
+                        if let Some(debug_marker) = debug_ant {
+                            let search_time = time.elapsed_seconds() - ant.startup_timer.max(0.0);
+                            println!("🎯 DEBUG ANT #{} FOUND FOOD! @ T={:.1}s | Pos=({:.0},{:.0}) | SearchTime={:.1}s | FoodLeft={:.1}", 
+                                debug_marker.ant_id, time.elapsed_seconds(), ant_pos.x, ant_pos.y, search_time, food.amount);
+                        }
+                        
                         // Head toward nest
                         let direction = nest_pos - ant_pos;
                         let direction_2d = Vec2::new(direction.x, direction.y);
@@ -426,6 +500,12 @@ pub fn food_collection_system(
                 
                 let total_return_time: f32 = performance_tracker.return_times.iter().sum();
                 performance_tracker.average_return_time = total_return_time / performance_tracker.return_times.len() as f32;
+                
+                // Debug logging for food delivery
+                if let Some(debug_marker) = debug_ant {
+                    println!("✅ DEBUG ANT #{} DELIVERED FOOD! @ T={:.1}s | TotalDeliveries={} | ReturnTime={:.1}s", 
+                        debug_marker.ant_id, time.elapsed_seconds(), ant.successful_deliveries, return_time);
+                }
                 
                 
                 // Start exploring again

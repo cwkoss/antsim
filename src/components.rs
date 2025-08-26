@@ -196,6 +196,11 @@ pub struct AntState {
     pub current_goal_start_time: f32, // When ant started pursuing current goal
 }
 
+#[derive(Component)]
+pub struct DebugAnt {
+    pub ant_id: u32,
+}
+
 #[derive(Component, Default)]
 pub struct Velocity {
     pub x: f32,

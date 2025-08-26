@@ -100,7 +100,7 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
         let x = angle.cos() * 50.0;
         let y = angle.sin() * 50.0;
         
-        commands.spawn((
+        let mut ant_bundle = commands.spawn((
             SpriteBundle {
                 sprite: Sprite {
                     color: color_config.ant_exploring,
@@ -147,6 +147,12 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
                 y: (rand::random::<f32>() * 2.0 - 1.0) * 1.5,
             },
         ));
+        
+        // Mark the first ant for debugging
+        if i == 0 {
+            ant_bundle.insert(DebugAnt { ant_id: 0 });
+            println!("🐜 DEBUG ANT #0 spawned at position ({:.1}, {:.1}) with direction {:.2} radians", x, y, angle);
+        }
     }
     
     // CHALLENGE MODE: All food sources FAR from nest (minimum 1/3 world size away)
