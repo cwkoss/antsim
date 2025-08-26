@@ -1,13 +1,13 @@
 {
-  "current_generation": 31,
-  "description": "Revert nest orbiting fix and return to baseline performance",
+  "current_generation": 32,
+  "description": "Enhanced trail persistence - building on Generation 31 success",
   "performance_metrics": {
-    "average_return_time_seconds": 6.054297924041748,
-    "average_time_since_goal_seconds": 24.8785400390625,
+    "average_return_time_seconds": 6.2646074295043945,
+    "average_time_since_goal_seconds": 52.917686462402344,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 112,
-    "total_food_collected": 117.0
+    "successful_deliveries": 82,
+    "total_food_collected": 84.0
   },
-  "timestamp": "2025-08-26T05:21:41Z",
-  "video_filename": "0030_revert_nest_orbiting_fix_and_return_to_baseline_performance.mp4"
+  "timestamp": "2025-08-26T05:26:27Z",
+  "video_filename": "0031_enhanced_trail_persistence_-_building_on_generation_31_success.mp4"
 }

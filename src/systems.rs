@@ -111,21 +111,21 @@ pub fn sensing_system(
                         
                         // Additional persistence bonus if ant has been following trails successfully
                         let persistence_bonus = if ant.behavior_state == AntBehaviorState::Following {
-                            0.2 // Extra bias to continue following if already on a trail
+                            0.25 // Increased trail persistence for better path commitment
                         } else {
                             0.0
                         };
                         
                         // Add gradient bonus for food pheromones - follow trails that lead toward food
-                        let gradient_bonus = if adjusted_strength > current_pheromone + 0.05 {
+                        let gradient_bonus = if pheromone_strength > current_pheromone + 0.05 {
                             0.3 // Bonus for following stronger food pheromone (toward food sources)
-                        } else if adjusted_strength < current_pheromone - 0.05 {
+                        } else if pheromone_strength < current_pheromone - 0.05 {
                             -0.2 // Strict penalty - abandon declining trails
                         } else {
                             0.0 // Neutral if pheromone strength is similar
                         };
                         
-                        let effective_strength = adjusted_strength + momentum_bonus + gradient_bonus + persistence_bonus;
+                        let effective_strength = pheromone_strength + momentum_bonus + gradient_bonus + persistence_bonus;
                         
                         if effective_strength > max_pheromone {
                             max_pheromone = effective_strength;
