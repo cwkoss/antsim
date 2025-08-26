@@ -1,13 +1,13 @@
 {
-  "current_generation": 41,
-  "description": "Longer-lasting trails",
+  "current_generation": 45,
+  "description": "Enhanced gradient-momentum hybrid with tiered momentum reduction",
   "performance_metrics": {
-    "average_return_time_seconds": 6.07189416885376,
-    "average_time_since_goal_seconds": 77.28699493408203,
+    "average_return_time_seconds": 6.258134841918945,
+    "average_time_since_goal_seconds": 52.869873046875,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 63,
-    "total_food_collected": 65.0
+    "successful_deliveries": 74,
+    "total_food_collected": 76.0
   },
-  "timestamp": "2025-08-26T05:47:06Z",
-  "video_filename": "0040_longer-lasting_trails.mp4"
+  "timestamp": "2025-08-26T16:54:28Z",
+  "video_filename": "0044_enhanced_gradient-momentum_hybrid_with_tiered_momentum_reduction.mp4"
 }

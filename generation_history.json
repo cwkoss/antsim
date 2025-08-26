@@ -1,5 +1,5 @@
 {
-  "current_generation": 40,
+  "current_generation": 44,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -590,6 +590,70 @@
       },
       "timestamp": "2025-08-26T05:45:03Z",
       "video_filename": "0039_fine-tuned_trail_persistence.mp4"
+    },
+    {
+      "description": "Advanced gradient system: predictive lookahead + trail width analysis",
+      "generation": 41,
+      "key_changes": [
+        "Generation 41 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.07189416885376,
+        "average_time_since_goal_seconds": 77.28699493408203,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 63,
+        "total_food_collected": 65.0
+      },
+      "timestamp": "2025-08-26T05:47:06Z",
+      "video_filename": "0040_longer-lasting_trails.mp4"
+    },
+    {
+      "description": "Tuned gradient system: reduced predictive bonus and trail width impact",
+      "generation": 42,
+      "key_changes": [
+        "Generation 42 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.055577278137207,
+        "average_time_since_goal_seconds": 78.26859283447266,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 53,
+        "total_food_collected": 55.0
+      },
+      "timestamp": "2025-08-26T16:47:42Z",
+      "video_filename": "0041_advanced_gradient_system.mp4"
+    },
+    {
+      "description": "Optimized lookahead distance: 15 to 12 units for better responsiveness",
+      "generation": 43,
+      "key_changes": [
+        "Generation 43 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.112423419952393,
+        "average_time_since_goal_seconds": 40.53741455078125,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 87,
+        "total_food_collected": 92.0
+      },
+      "timestamp": "2025-08-26T16:50:19Z",
+      "video_filename": "0042_tuned_gradient_system.mp4"
+    },
+    {
+      "description": "Enhanced gradient-momentum hybrid with tiered momentum reduction",
+      "generation": 44,
+      "key_changes": [
+        "Generation 44 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.7771782875061035,
+        "average_time_since_goal_seconds": 63.45167541503906,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 71,
+        "total_food_collected": 73.0
+      },
+      "timestamp": "2025-08-26T16:52:20Z",
+      "video_filename": "0043_optimized_lookahead_distance.mp4"
     }
   ],
   "next_planned_improvements": [

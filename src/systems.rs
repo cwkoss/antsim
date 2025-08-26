@@ -93,8 +93,8 @@ pub fn sensing_system(
                 let mut max_pheromone = 0.0;
                 let mut found_trail = false;
                 
-                // Look for directional pheromone gradients instead of just strength
-                let current_pheromone = grid.sample_all_directions(pos.x, pos.y, PheromoneType::Food)[0]; // Sample at current position
+                // Advanced gradient analysis with predictive lookahead
+                let current_pheromone = pheromone_readings[0]; // Center position
                 
                 for (i, &pheromone_strength) in pheromone_readings.iter().enumerate() {
                     if pheromone_strength > 0.15 {
@@ -107,25 +107,55 @@ pub fn sensing_system(
                         } else { 
                             angle_diff 
                         };
-                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.9; // Very strong momentum for focused movement
+                        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.9;
                         
                         // Additional persistence bonus if ant has been following trails successfully
                         let persistence_bonus = if ant.behavior_state == AntBehaviorState::Following {
-                            0.2 // Back to successful Generation 37/39 value
+                            0.2
                         } else {
                             0.0
                         };
                         
-                        // Add gradient bonus for food pheromones - follow trails that lead toward food
-                        let gradient_bonus = if pheromone_strength > current_pheromone + 0.05 {
-                            0.4 // Stronger bonus for following stronger food pheromone trails
-                        } else if pheromone_strength < current_pheromone - 0.05 {
-                            -0.2 // Strict penalty - abandon declining trails
+                        // ADVANCED: Predictive gradient analysis - look ahead along this direction
+                        let lookahead_distance = 15.0; // Back to Generation 43 successful distance
+                        let lookahead_x = pos.x + angle.cos() * lookahead_distance;
+                        let lookahead_y = pos.y + angle.sin() * lookahead_distance;
+                        let lookahead_pheromone = grid.sample_directional(lookahead_x, lookahead_y, angle, 3.0, PheromoneType::Food);
+                        
+                        // ADVANCED: Trail width analysis - check perpendicular directions for trail width
+                        let perp_angle_1 = angle + std::f32::consts::PI / 2.0;
+                        let perp_angle_2 = angle - std::f32::consts::PI / 2.0;
+                        let side_distance = 8.0;
+                        let left_pheromone = grid.sample_directional(pos.x, pos.y, perp_angle_1, side_distance, PheromoneType::Food);
+                        let right_pheromone = grid.sample_directional(pos.x, pos.y, perp_angle_2, side_distance, PheromoneType::Food);
+                        let trail_width_factor = 1.0 + (left_pheromone + right_pheromone) * 0.15; // More conservative trail width bonus
+                        
+                        // Enhanced gradient bonus with predictive element
+                        let immediate_gradient = pheromone_strength - current_pheromone;
+                        let predictive_gradient = lookahead_pheromone - pheromone_strength;
+                        
+                        let gradient_bonus = if immediate_gradient > 0.05 && predictive_gradient >= -0.02 {
+                            0.4 + predictive_gradient * 0.8 // More conservative predictive bonus
+                        } else if immediate_gradient > 0.05 {
+                            0.3 // Medium bonus for upward gradient only
+                        } else if immediate_gradient < -0.05 && predictive_gradient < -0.05 {
+                            -0.3 // Reduced penalty for consistently declining trails
+                        } else if immediate_gradient < -0.05 {
+                            -0.15 // Reduced penalty for declining trails
                         } else {
-                            0.0 // Neutral if pheromone strength is similar
+                            0.0
                         };
                         
-                        let effective_strength = pheromone_strength + momentum_bonus + gradient_bonus + persistence_bonus;
+                        // Smart momentum-gradient hybrid: reduce momentum when gradient is very strong
+                        let hybrid_momentum = if immediate_gradient > 0.12 {
+                            momentum_bonus * 0.6 // More aggressive momentum reduction for strong gradients
+                        } else if immediate_gradient > 0.08 {
+                            momentum_bonus * 0.8 // Medium momentum reduction for moderate gradients
+                        } else {
+                            momentum_bonus
+                        };
+                        
+                        let effective_strength = pheromone_strength * trail_width_factor + hybrid_momentum + gradient_bonus + persistence_bonus;
                         
                         if effective_strength > max_pheromone {
                             max_pheromone = effective_strength;
