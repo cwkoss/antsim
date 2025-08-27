@@ -39,7 +39,7 @@ impl Default for SimConfig {
             diff_alarm: 0.2,
             
             base_exploration_noise: 0.02,    // GENERATION 71: Revert to balanced exploration
-            follow_gain: 3.0,    // Maximum pheromone sensitivity for precise trail following
+            follow_gain: 3.5,    // GENERATION 72: Enhanced trail-following sensitivity
             lay_rate_food: 40.0,    // GENERATION 71: Revert to optimal rate from Gen 69
             lay_rate_nest: 0.0,     // EXPERIMENT: Zero nest pheromone to eliminate trail confusion
             food_quality_weight: 1.0,

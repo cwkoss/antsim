@@ -1,5 +1,5 @@
 {
-  "current_generation": 71,
+  "current_generation": 72,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -1086,6 +1086,22 @@
       },
       "timestamp": "2025-08-27T04:48:56Z",
       "video_filename": "0070_generation_70.mp4"
+    },
+    {
+      "description": "Generation 72: Enhanced trail-following sensitivity for precision pathfinding",
+      "generation": 72,
+      "key_changes": [
+        "Generation 72 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.683270454406738,
+        "average_time_since_goal_seconds": 14.683282852172852,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 187,
+        "total_food_collected": 199.0
+      },
+      "timestamp": "2025-08-27T04:51:08Z",
+      "video_filename": "0071_generation_71.mp4"
     }
   ],
   "next_planned_improvements": [
