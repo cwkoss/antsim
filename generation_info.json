@@ -1,13 +1,13 @@
 {
-  "current_generation": 68,
-  "description": "Fixed food scent",
+  "current_generation": 72,
+  "description": "Generation 71",
   "performance_metrics": {
-    "average_return_time_seconds": 6.010315895080566,
-    "average_time_since_goal_seconds": 15.156359672546387,
+    "average_return_time_seconds": 5.683270454406738,
+    "average_time_since_goal_seconds": 14.683282852172852,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 165,
-    "total_food_collected": 177.0
+    "successful_deliveries": 187,
+    "total_food_collected": 199.0
   },
-  "timestamp": "2025-08-26T22:33:48Z",
-  "video_filename": "0067_fixed_food_scent.mp4"
+  "timestamp": "2025-08-27T04:51:08Z",
+  "video_filename": "0071_generation_71.mp4"
 }

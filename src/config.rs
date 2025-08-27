@@ -31,19 +31,19 @@ impl Default for SimConfig {
             initial_ants: 50,       // Back to original 50 ants  
             food_sources: 10,       // Back to original 10 food sources - no cheating!
             
-            evap_food: 0.00015,     // Back to Generation 54 successful value
+            evap_food: 0.0002,     // GENERATION 69: Faster decay to promote efficient pathfinding
             evap_nest: 0.0005,      // Back to Generation 54 successful value
             evap_alarm: 0.01,
-            diff_food: 0.12,        // Back to Generation 54 successful value  
+            diff_food: 0.15,        // GENERATION 71: Enhanced pheromone diffusion for smoother trails  
             diff_nest: 0.05,        // Back to Generation 54 successful value
             diff_alarm: 0.2,
             
-            base_exploration_noise: 0.02,    // Ultra-low noise for maximum focus
+            base_exploration_noise: 0.02,    // GENERATION 71: Revert to balanced exploration
             follow_gain: 3.0,    // Maximum pheromone sensitivity for precise trail following
-            lay_rate_food: 40.0,    // OPTIMIZATION 3: Doubled initial pheromone deposition
+            lay_rate_food: 40.0,    // GENERATION 71: Revert to optimal rate from Gen 69
             lay_rate_nest: 0.0,     // EXPERIMENT: Zero nest pheromone to eliminate trail confusion
             food_quality_weight: 1.0,
-            detection_threshold: 0.001,  // Back to Generation 37 value
+            detection_threshold: 0.0008,  // GENERATION 69: Enhanced sensitivity for gradient detection
             saturation_limit: 10.0,
         }
     }

@@ -98,9 +98,21 @@ fn capture_simulation_frame(
         for grid_x in 0..pheromone_grid.width {
             let grid_idx = grid_y * pheromone_grid.width + grid_x;
             
-            // Get pheromone values
-            let food_pheromone = pheromone_grid.food_trail[grid_idx].min(1.0);
-            let nest_pheromone = pheromone_grid.nest_trail[grid_idx].min(1.0);
+            // Get pheromone values with logarithmic scaling: log(pheromone)^1.3 * 20
+            let raw_food = pheromone_grid.food_trail[grid_idx];
+            let raw_nest = pheromone_grid.nest_trail[grid_idx];
+            
+            let food_pheromone = if raw_food > 0.01 {
+                (raw_food.ln().powf(1.3) * 20.0).clamp(0.0, 255.0)
+            } else {
+                0.0
+            };
+            
+            let nest_pheromone = if raw_nest > 0.01 {
+                (raw_nest.ln().powf(1.3) * 20.0).clamp(0.0, 255.0)
+            } else {
+                0.0
+            };
             
             // Map to screen coordinates 
             let screen_x = grid_to_screen_x(grid_x);

@@ -1,5 +1,5 @@
 {
-  "current_generation": 67,
+  "current_generation": 71,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -1022,6 +1022,70 @@
       },
       "timestamp": "2025-08-26T22:30:37Z",
       "video_filename": "0066_improved_food_scent.mp4"
+    },
+    {
+      "description": "Logarithmic pheromone visualization scaling test",
+      "generation": 68,
+      "key_changes": [
+        "Generation 68 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.010315895080566,
+        "average_time_since_goal_seconds": 15.156359672546388,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 165,
+        "total_food_collected": 177.0
+      },
+      "timestamp": "2025-08-26T22:33:48Z",
+      "video_filename": "0067_fixed_food_scent.mp4"
+    },
+    {
+      "description": "Generation 69: Faster pheromone decay and enhanced gradient detection",
+      "generation": 69,
+      "key_changes": [
+        "Generation 69 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.967995643615723,
+        "average_time_since_goal_seconds": 19.38392639160156,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 171,
+        "total_food_collected": 183.0
+      },
+      "timestamp": "2025-08-27T04:44:30Z",
+      "video_filename": "0068_logarithmic_pheromone_visualization_scaling_test.mp4"
+    },
+    {
+      "description": "Generation 70: Enhanced trail deposition and laser-focused pathfinding",
+      "generation": 70,
+      "key_changes": [
+        "Generation 70 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.23197078704834,
+        "average_time_since_goal_seconds": 9.111920356750488,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 212,
+        "total_food_collected": 225.0
+      },
+      "timestamp": "2025-08-27T04:46:47Z",
+      "video_filename": "0069_generation_69.mp4"
+    },
+    {
+      "description": "Generation 71: Enhanced pheromone diffusion optimization",
+      "generation": 71,
+      "key_changes": [
+        "Generation 71 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.831279754638672,
+        "average_time_since_goal_seconds": 23.748065948486328,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 155,
+        "total_food_collected": 166.0
+      },
+      "timestamp": "2025-08-27T04:48:56Z",
+      "video_filename": "0070_generation_70.mp4"
     }
   ],
   "next_planned_improvements": [

@@ -988,23 +988,27 @@ pub fn update_pheromone_visualization(
                 
                 if max_strength > 0.01 {
                     if food_strength > nest_strength {
-                        let intensity = (food_strength.ln() / 3.0).clamp(0.0, 1.0);
+                        // Logarithmic scaling: green = log(food_pheromone)^1.3 * 20, clamped to [0,255]
+                        let log_intensity = food_strength.ln().powf(1.3) * 20.0;
+                        let green_value = (log_intensity / 255.0).clamp(0.0, 1.0);
                         let base_color = color_config.food_pheromone;
                         sprite.color = Color::srgba(
                             base_color.to_srgba().red,
-                            base_color.to_srgba().green,
+                            green_value, // Use calculated logarithmic green intensity
                             base_color.to_srgba().blue,
-                            intensity
+                            green_value // Use same value for alpha to show intensity
                         );
                         transform.translation.z = -9.0;
                     } else {
-                        let intensity = (nest_strength.ln() / 3.0).clamp(0.0, 1.0);
+                        // Same logarithmic scaling for nest pheromone (blue)
+                        let log_intensity = nest_strength.ln().powf(1.3) * 20.0;
+                        let blue_value = (log_intensity / 255.0).clamp(0.0, 1.0);
                         let base_color = color_config.nest_pheromone;
                         sprite.color = Color::srgba(
                             base_color.to_srgba().red,
                             base_color.to_srgba().green,
-                            base_color.to_srgba().blue,
-                            intensity
+                            blue_value, // Use calculated logarithmic blue intensity
+                            blue_value // Use same value for alpha to show intensity
                         );
                         transform.translation.z = -10.0;
                     }
