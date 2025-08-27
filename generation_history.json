@@ -1,5 +1,5 @@
 {
-  "current_generation": 75,
+  "current_generation": 81,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -1150,6 +1150,102 @@
       },
       "timestamp": "2025-08-27T05:05:50Z",
       "video_filename": "0074_generation_74.mp4"
+    },
+    {
+      "description": "Fixed video pheromone oversaturation - normalized scaling to match simulation",
+      "generation": 76,
+      "key_changes": [
+        "Generation 76 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.097370624542236,
+        "average_time_since_goal_seconds": 18.253755569458008,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 160,
+        "total_food_collected": 169.0
+      },
+      "timestamp": "2025-08-27T05:08:03Z",
+      "video_filename": "0075_generation_75.mp4"
+    },
+    {
+      "description": "Fixed white border issue - proper channel-based pheromone rendering",
+      "generation": 77,
+      "key_changes": [
+        "Generation 77 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.138673305511475,
+        "average_time_since_goal_seconds": 7.467624664306641,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 192,
+        "total_food_collected": 209.0
+      },
+      "timestamp": "2025-08-27T05:14:54Z",
+      "video_filename": "0076_fixed_video_pheromone_oversaturation_-_normalized_scaling_to_match_simulation.mp4"
+    },
+    {
+      "description": "Enhanced ant diagnostic system with swarming and edge-wanderer detection - fixed compilation",
+      "generation": 78,
+      "key_changes": [
+        "Generation 78 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.134488582611084,
+        "average_time_since_goal_seconds": 23.373615264892575,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 167,
+        "total_food_collected": 173.0
+      },
+      "timestamp": "2025-08-27T05:18:59Z",
+      "video_filename": "0077_fixed_white_border_issue_-_proper_channel-based_pheromone_rendering.mp4"
+    },
+    {
+      "description": "Anti-swarming and edge-wanderer fixes - traffic jam dispersion and center-directed recovery",
+      "generation": 79,
+      "key_changes": [
+        "Generation 79 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.824405670166016,
+        "average_time_since_goal_seconds": 19.015090942382812,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 177,
+        "total_food_collected": 187.0
+      },
+      "timestamp": "2025-08-27T05:27:46Z",
+      "video_filename": "0078_enhanced_ant_diagnostic_system_with_swarming_and_edge-wanderer_detection_-_fixed_compilation.mp4"
+    },
+    {
+      "description": "Parameter optimization based on diagnostic insights - stronger trails and enhanced following",
+      "generation": 80,
+      "key_changes": [
+        "Generation 80 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.607160568237305,
+        "average_time_since_goal_seconds": 14.726905822753906,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 198,
+        "total_food_collected": 206.0
+      },
+      "timestamp": "2025-08-27T05:31:18Z",
+      "video_filename": "0079_anti-swarming_and_edge-wanderer_fixes_-_traffic_jam_dispersion_and_center-directed_recovery.mp4"
+    },
+    {
+      "description": "Enhanced behavioral fixes - aggressive anti-swarming and center-seeking recovery",
+      "generation": 81,
+      "key_changes": [
+        "Generation 81 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.748330116271973,
+        "average_time_since_goal_seconds": 17.178081512451172,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 190,
+        "total_food_collected": 205.0
+      },
+      "timestamp": "2025-08-27T05:33:36Z",
+      "video_filename": "0080_parameter_optimization_based_on_diagnostic_insights_-_stronger_trails_and_enhanced_following.mp4"
     }
   ],
   "next_planned_improvements": [

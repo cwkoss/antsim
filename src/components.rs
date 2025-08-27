@@ -200,6 +200,19 @@ pub struct AntState {
     pub food_carry_start_time: f32, // When ant picked up food (for return time tracking)
     pub last_goal_achievement_time: f32, // When ant last reached a goal (found food or delivered to nest)
     pub current_goal_start_time: f32, // When ant started pursuing current goal
+    
+    // New diagnostic fields for behavior analysis
+    pub can_see_trail: bool, // Whether ant can detect any pheromone trail nearby
+    pub distance_from_trail: f32, // Distance to nearest significant pheromone concentration
+    pub trail_following_time: f32, // How long ant has been following current trail
+    pub last_trail_contact_time: f32, // When ant last detected significant pheromone
+    pub is_swarming: bool, // Whether ant is stuck in traffic with other ants
+    pub nearby_ant_count: u32, // Number of ants within close proximity
+    pub time_since_progress: f32, // Time since ant made meaningful progress toward goal
+    pub exploration_efficiency: f32, // Ratio of distance covered vs time spent exploring
+    pub is_edge_wanderer: bool, // Whether ant is stuck wandering world edges
+    pub world_edge_proximity: f32, // Distance from nearest world edge
+    pub trail_gradient_strength: f32, // Strength of pheromone gradient at current position
 }
 
 #[derive(Component)]

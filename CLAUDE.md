@@ -111,7 +111,25 @@ cargo run
 - Immediate recording start for complete behavior capture
 - Proper coordinate transformation and pixel mapping\n- **Video Naming Convention**: Fixed to use established pattern `####_description.mp4` (e.g., 0007_codebase_cleanup_generation.mp4)\n- **Cleanup**: Removed debug output and unused modules for cleaner console output
 
-### Current Status (Generation 31)\n- **Latest Video**: 0030_revert_nest_orbiting_fix_and_return_to_baseline_performance.mp4\n- **🎉 NEW RECORD**: 24.9s average time since goal, 6.1s return time, 112 deliveries\n- **Major Breakthrough**: Generation 31 achieved best performance in project history\n- **System State**: Optimal configuration with doubled pheromone deposition, adaptive exploration, and path persistence\n- **Workflow Achievement**: Implemented argument-based script for automated optimization cycles\n\n## Development Workflow
+### Current Status (Generation 77+)
+- **Latest Achievement**: Fixed white border pheromone visualization issue - video now matches simulation rendering
+- **🎯 NEW OPTIMIZATION FOCUS**: Individual ant behavior analysis and optimization
+- **Current Challenge**: Eliminate trail swarming and edge-wandering behaviors that harm performance metrics
+- **System State**: Enhanced ant-centric diagnostic tracking with fields like canSeeTrail, distanceFromTrail, isSwarming
+- **Approach**: Cycle through logging → analysis → behavior fixes → testing to systematically improve ant efficiency
+
+### Active Development Path (Generation 77+)
+**PRIORITY**: Continue ant behavior optimization cycle:
+1. **Enhanced Logging**: Add detailed ant-centric state tracking (canSeeTrail, distanceFromTrail, timeOnTrail, etc.)
+2. **Behavior Analysis**: Use logging to identify specific issues (trail swarming, edge wandering, stuck behaviors)
+3. **Targeted Fixes**: Address identified problems with surgical behavioral improvements
+4. **Performance Testing**: Measure impact on averageTimeSinceGoal metric and iterate
+5. **Repeat**: Continue this cycle to achieve maximum optimization
+
+**Key Issues to Solve**:
+- Ants swarming in middle of pheromone paths while seeking food
+- Edge-wandering ants that never find trails and hurt metrics
+- Individual ant inefficiencies that aggregate to poor performance\n## Development Workflow
 
 ### Making Changes
 1. Modify relevant system in src/

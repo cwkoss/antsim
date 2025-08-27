@@ -103,13 +103,13 @@ fn capture_simulation_frame(
             let raw_nest = pheromone_grid.nest_trail[grid_idx];
             
             let food_pheromone = if raw_food > 0.01 {
-                (raw_food.ln().powf(1.3) * 20.0).clamp(0.0, 255.0)
+                ((raw_food.ln().powf(1.3) * 20.0) / 255.0).clamp(0.0, 1.0)
             } else {
                 0.0
             };
             
             let nest_pheromone = if raw_nest > 0.01 {
-                (raw_nest.ln().powf(1.3) * 20.0).clamp(0.0, 255.0)
+                ((raw_nest.ln().powf(1.3) * 20.0) / 255.0).clamp(0.0, 1.0)
             } else {
                 0.0
             };
@@ -122,19 +122,28 @@ fn capture_simulation_frame(
                 let pixel_idx = ((screen_y * target_width + screen_x) * 4) as usize;
                 
                 if pixel_idx + 3 < frame.len() {
-                    // Use shared color config for consistent rendering
-                    let (food_r, food_g, food_b) = color_config.food_pheromone_rgb();
-                    let (nest_r, nest_g, nest_b) = color_config.nest_pheromone_rgb();
-                    
-                    // Blend colors based on pheromone strength
-                    let r = ((nest_pheromone * nest_r as f32) + (food_pheromone * food_r as f32)).min(255.0) as u8;
-                    let g = ((nest_pheromone * nest_g as f32) + (food_pheromone * food_g as f32)).min(255.0) as u8;
-                    let b = ((nest_pheromone * nest_b as f32) + (food_pheromone * food_b as f32)).min(255.0) as u8;
-                    
-                    frame[pixel_idx] = r;
-                    frame[pixel_idx + 1] = g;
-                    frame[pixel_idx + 2] = b;
-                    frame[pixel_idx + 3] = 255; // Full opacity
+                    // Match simulation logic: use stronger pheromone and apply to specific channel
+                    if food_pheromone > nest_pheromone {
+                        // Food pheromone dominates - use green channel
+                        let (food_r, _food_g, food_b) = color_config.food_pheromone_rgb();
+                        frame[pixel_idx] = food_r;
+                        frame[pixel_idx + 1] = (food_pheromone * 255.0) as u8; // Apply intensity to green
+                        frame[pixel_idx + 2] = food_b;
+                        frame[pixel_idx + 3] = 255;
+                    } else if nest_pheromone > 0.0 {
+                        // Nest pheromone dominates - use blue channel  
+                        let (nest_r, nest_g, _nest_b) = color_config.nest_pheromone_rgb();
+                        frame[pixel_idx] = nest_r;
+                        frame[pixel_idx + 1] = nest_g;
+                        frame[pixel_idx + 2] = (nest_pheromone * 255.0) as u8; // Apply intensity to blue
+                        frame[pixel_idx + 3] = 255;
+                    } else {
+                        // No pheromone - transparent
+                        frame[pixel_idx] = 0;
+                        frame[pixel_idx + 1] = 0; 
+                        frame[pixel_idx + 2] = 0;
+                        frame[pixel_idx + 3] = 255;
+                    }
                 }
             }
         }

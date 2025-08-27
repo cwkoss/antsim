@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::{WindowCloseRequested, PrimaryWindow};
-use rand::Rng;
+use rand::{Rng, random};
 use crate::components::*;
 use crate::config::*;
 use crate::pheromones::*;
@@ -67,6 +67,17 @@ pub fn sensing_system(
             ant.sensing_timer -= delta_time;
             ant.startup_timer -= delta_time;
             
+            // Update diagnostic timers
+            ant.time_since_progress += delta_time;
+            ant.trail_following_time += delta_time;
+            
+            // Calculate world edge proximity for edge-wandering detection
+            let world_half_size = 500.0; // Assuming 1000x1000 world
+            let x_edge_dist = world_half_size - pos.x.abs();
+            let y_edge_dist = world_half_size - pos.y.abs();
+            ant.world_edge_proximity = x_edge_dist.min(y_edge_dist);
+            ant.is_edge_wanderer = ant.world_edge_proximity < 50.0 && ant.time_since_progress > 10.0;
+            
             // Don't process ants that are collecting food or still in startup
             if ant.food_collection_timer > 0.0 || ant.startup_timer > 0.0 {
                 continue;
@@ -106,8 +117,37 @@ pub fn sensing_system(
                 let mut max_pheromone = 0.0;
                 let mut found_trail = false;
                 
-                // Advanced gradient analysis with predictive lookahead
+                // DIAGNOSTIC ANALYSIS: Update ant-centric state tracking
                 let current_pheromone = pheromone_readings[0]; // Center position
+                ant.can_see_trail = current_pheromone > config.detection_threshold;
+                
+                // Calculate distance to nearest significant pheromone concentration
+                let mut min_trail_distance = f32::INFINITY;
+                for i in 1..9 { // Skip center (index 0)
+                    let sample_distance = 15.0; // Distance for directional sampling
+                    let angle = ((i - 1) as f32) * std::f32::consts::TAU / 8.0;
+                    let sample_x = pos.x + angle.cos() * sample_distance;
+                    let sample_y = pos.y + angle.sin() * sample_distance;
+                    let sample_strength = grid.sample_directional(sample_x, sample_y, angle, 5.0, PheromoneType::Food);
+                    
+                    if sample_strength > config.detection_threshold {
+                        min_trail_distance = min_trail_distance.min(sample_distance);
+                    }
+                }
+                ant.distance_from_trail = min_trail_distance;
+                
+                // Update trail contact timing
+                if ant.can_see_trail {
+                    ant.last_trail_contact_time = time.elapsed_seconds();
+                    ant.trail_following_time = 0.0; // Reset - starting new trail section
+                } 
+                
+                // Calculate pheromone gradient strength for behavior analysis
+                let max_reading = pheromone_readings.iter().skip(1).copied().fold(0.0f32, f32::max);
+                let min_reading = pheromone_readings.iter().skip(1).copied().fold(f32::INFINITY, f32::min);
+                ant.trail_gradient_strength = max_reading - min_reading.min(max_reading);
+                
+                // Advanced gradient analysis with predictive lookahead
                 
                 for (i, &pheromone_strength) in pheromone_readings.iter().enumerate() {
                     if pheromone_strength > 0.15 {
@@ -204,6 +244,33 @@ pub fn sensing_system(
                     }
                 }
                 
+                // ENHANCED ANTI-SWARMING: Dynamic traffic management
+                let swarming_penalty = if ant.is_swarming && ant.nearby_ant_count >= 4 {
+                    // Severe swarming - force alternative behavior
+                    let penalty_factor = (ant.nearby_ant_count as f32 * 0.4).min(0.9);
+                    max_pheromone *= 1.0 - penalty_factor;
+                    
+                    // Stronger deviation for severe traffic
+                    let random_deviation = (rand::random::<f32>() - 0.5) * 0.8;
+                    best_direction += random_deviation;
+                    
+                    // Force shorter sensing intervals to adapt faster
+                    ant.sensing_timer = ant.sensing_timer.min(0.3);
+                    
+                    penalty_factor
+                } else if ant.is_swarming {
+                    // Light swarming - gentle dispersal
+                    let penalty_factor = 0.3;
+                    max_pheromone *= 1.0 - penalty_factor;
+                    
+                    let random_deviation = (rand::random::<f32>() - 0.5) * 0.4;
+                    best_direction += random_deviation;
+                    
+                    penalty_factor
+                } else {
+                    0.0
+                };
+                
                 if found_trail && max_pheromone > 0.2 {
                     // Smooth direction change for trail following
                     ant.behavior_state = AntBehaviorState::Following;
@@ -227,7 +294,26 @@ pub fn sensing_system(
                     // No trail found - random exploration
                     ant.behavior_state = AntBehaviorState::Exploring;
                     
-                    if ant.sensing_timer <= 0.0 {
+                    // ENHANCED EDGE-WANDERER RECOVERY: Aggressive center-seeking behavior
+                    if ant.is_edge_wanderer || (ant.world_edge_proximity < 100.0 && ant.time_since_progress > 8.0) {
+                        let center = Vec2::ZERO;
+                        let to_center = center - Vec2::new(pos.x, pos.y);
+                        let center_direction = to_center.normalize();
+                        
+                        // Stronger center bias for distant ants
+                        let distance_from_center = to_center.length();
+                        let urgency_factor = (distance_from_center / 400.0).min(1.0);
+                        
+                        // Mix center direction with some randomness based on urgency
+                        let random_component = (rand::random::<f32>() - 0.5) * (0.8 - urgency_factor * 0.4);
+                        ant.current_direction = center_direction.y.atan2(center_direction.x) + random_component;
+                        
+                        set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
+                        ant.sensing_timer = 0.3; // Very frequent sensing for recovery
+                        
+                        // Reset progress timer on intervention  
+                        ant.time_since_progress = 0.0;
+                    } else if ant.sensing_timer <= 0.0 {
                         // Adaptive exploration: more aggressive as search time increases
                         let search_time = if ant.last_goal_achievement_time > 0.0 {
                             time.elapsed_seconds() - ant.last_goal_achievement_time
@@ -333,6 +419,117 @@ pub fn sensing_system(
                 }
             }
         }
+    }
+}
+
+// New system to detect ant swarming and proximity issues
+pub fn ant_proximity_analysis_system(
+    mut ants: Query<(Entity, &Transform, &mut AntState)>,
+    time: Res<Time>,
+) {
+    let mut ant_positions: Vec<(Entity, Vec2)> = Vec::new();
+    
+    // First pass: collect positions
+    for (entity, transform, _) in ants.iter() {
+        let pos = Vec2::new(transform.translation.x, transform.translation.y);
+        ant_positions.push((entity, pos));
+    }
+    
+    // Second pass: analyze proximity and update states
+    for (entity, transform, mut ant_state) in ants.iter_mut() {
+        let current_pos = Vec2::new(transform.translation.x, transform.translation.y);
+        let mut nearby_count = 0;
+        let proximity_threshold = 25.0;
+        
+        for (other_entity, other_pos) in &ant_positions {
+            if *other_entity != entity {
+                let distance = current_pos.distance(*other_pos);
+                if distance < proximity_threshold {
+                    nearby_count += 1;
+                }
+            }
+        }
+        
+        ant_state.nearby_ant_count = nearby_count;
+        ant_state.is_swarming = nearby_count >= 3 && ant_state.trail_following_time > 2.0;
+        
+        // Update exploration efficiency
+        let current_time = time.elapsed_seconds();
+        let time_delta = current_time - ant_state.current_goal_start_time;
+        if time_delta > 0.0 {
+            let distance_from_start = current_pos.distance(ant_state.last_position);
+            ant_state.exploration_efficiency = distance_from_start / time_delta.max(0.1);
+        }
+    }
+}
+
+// Comprehensive behavior analysis and logging system
+pub fn behavior_analysis_system(
+    ants: Query<(Entity, &Transform, &AntState, Option<&DebugAnt>)>,
+    time: Res<Time>,
+    performance_tracker: Res<PerformanceTracker>,
+) {
+    let current_time = time.elapsed_seconds();
+    
+    // Analysis counters
+    let mut total_ants = 0;
+    let mut ants_with_trails = 0;
+    let mut swarming_ants = 0;
+    let mut edge_wanderers = 0;
+    let mut stuck_ants = 0;
+    let mut efficient_ants = 0;
+    let mut total_time_since_progress = 0.0;
+    let mut total_exploration_efficiency = 0.0;
+    
+    for (entity, transform, ant, debug_ant) in ants.iter() {
+        total_ants += 1;
+        
+        if ant.can_see_trail { ants_with_trails += 1; }
+        if ant.is_swarming { swarming_ants += 1; }
+        if ant.is_edge_wanderer { edge_wanderers += 1; }
+        if ant.stuck_timer > 3.0 { stuck_ants += 1; }
+        if ant.exploration_efficiency > 10.0 { efficient_ants += 1; }
+        
+        total_time_since_progress += ant.time_since_progress;
+        total_exploration_efficiency += ant.exploration_efficiency;
+        
+        // Detailed logging for debug ant
+        if let Some(debug) = debug_ant {
+            if current_time.fract() < 0.1 { // Log roughly once per second
+                let pos = transform.translation;
+                println!("\n🐜 DEBUG ANT #{} ANALYSIS at {:.1}s:", debug.ant_id, current_time);
+                println!("   📍 Position: ({:.1}, {:.1}) | WorldEdgeProximity: {:.1}", pos.x, pos.y, ant.world_edge_proximity);
+                println!("   👁️ CanSeeTrail: {} | DistanceFromTrail: {:.1} | GradientStrength: {:.3}", 
+                    ant.can_see_trail, ant.distance_from_trail, ant.trail_gradient_strength);
+                println!("   🚶 TimeSinceProgress: {:.1}s | ExplorationEfficiency: {:.2}", 
+                    ant.time_since_progress, ant.exploration_efficiency);
+                println!("   👥 NearbyAnts: {} | IsSwarming: {} | IsEdgeWanderer: {}", 
+                    ant.nearby_ant_count, ant.is_swarming, ant.is_edge_wanderer);
+                println!("   🛤️ TrailFollowingTime: {:.1}s | LastTrailContact: {:.1}s ago", 
+                    ant.trail_following_time, current_time - ant.last_trail_contact_time);
+                println!("   🎯 CarryingFood: {} | BehaviorState: {:?}", ant.carrying_food, ant.behavior_state);
+            }
+        }
+    }
+    
+    // Aggregate analysis logging every 5 seconds
+    if current_time % 5.0 < 0.1 {
+        let avg_time_since_progress = total_time_since_progress / total_ants as f32;
+        let avg_exploration_efficiency = total_exploration_efficiency / total_ants as f32;
+        let trail_visibility_rate = (ants_with_trails as f32 / total_ants as f32) * 100.0;
+        let swarming_rate = (swarming_ants as f32 / total_ants as f32) * 100.0;
+        let edge_wanderer_rate = (edge_wanderers as f32 / total_ants as f32) * 100.0;
+        
+        println!("\n📊 BEHAVIOR ANALYSIS REPORT at {:.1}s:", current_time);
+        println!("   Total Ants: {} | AvgTimeSinceProgress: {:.1}s | AvgExplorationEfficiency: {:.2}", 
+            total_ants, avg_time_since_progress, avg_exploration_efficiency);
+        println!("   TrailVisibilityRate: {:.1}% ({}/{}) | SwarmingRate: {:.1}% ({}/{})", 
+            trail_visibility_rate, ants_with_trails, total_ants, swarming_rate, swarming_ants, total_ants);
+        println!("   EdgeWandererRate: {:.1}% ({}/{}) | StuckAnts: {}", 
+            edge_wanderer_rate, edge_wanderers, total_ants, stuck_ants);
+        println!("   EfficientAnts: {} | CurrentAvgGoalTime: {:.1}s | Deliveries: {}", 
+            efficient_ants, performance_tracker.average_time_since_goal, performance_tracker.successful_deliveries);
+        println!();
     }
 }
 
@@ -525,6 +722,7 @@ pub fn food_collection_system(
                         ant.has_found_food = true;
                         ant.food_carry_start_time = time.elapsed_seconds();
                         ant.last_goal_achievement_time = time.elapsed_seconds();
+                        ant.time_since_progress = 0.0; // Reset progress timer on food pickup
                         performance_tracker.total_food_collected += take_amount;
                         
                         // Debug logging for food pickup
@@ -552,6 +750,7 @@ pub fn food_collection_system(
                 ant.delivery_attempts += 1;
                 ant.successful_deliveries += 1;
                 ant.last_goal_achievement_time = time.elapsed_seconds();
+                ant.time_since_progress = 0.0; // Reset progress timer on successful delivery
                 
                 // Track delivery metrics
                 let delivery_time = time.elapsed_seconds() - ant.food_pickup_time;
@@ -844,6 +1043,19 @@ pub fn restart_system(
                     food_carry_start_time: 0.0,
                     last_goal_achievement_time: 0.0,
                     current_goal_start_time: 0.0,
+                    
+                    // Initialize diagnostic fields
+                    can_see_trail: false,
+                    distance_from_trail: f32::INFINITY,
+                    trail_following_time: 0.0,
+                    last_trail_contact_time: 0.0,
+                    is_swarming: false,
+                    nearby_ant_count: 0,
+                    time_since_progress: 0.0,
+                    exploration_efficiency: 0.0,
+                    is_edge_wanderer: false,
+                    world_edge_proximity: 0.0,
+                    trail_gradient_strength: 0.0,
                 },
                 Velocity {
                     x: (rand::random::<f32>() * 2.0 - 1.0) * 1.5,

@@ -25,6 +25,7 @@ fn main() {
             exit_condition: bevy::window::ExitCondition::DontExit,
             ..default()
         }))
+        .insert_resource(ClearColor(Color::BLACK)) // Match video background
         .insert_resource(SimConfig::default())
         .insert_resource(PheromoneGrid::new(1000, 1000)) // 1:1 with world grid
         .insert_resource(DebugInfo::default())
@@ -37,6 +38,8 @@ fn main() {
             Update,
             (
                 sensing_system,
+                ant_proximity_analysis_system,
+                behavior_analysis_system,
                 movement_system,
                 pheromone_deposit_system,
                 pheromone_update_system,
@@ -44,6 +47,12 @@ fn main() {
                 ant_visual_system,
                 food_visual_system,
                 update_pheromone_visualization,
+                performance_analysis_system,
+            ).chain()
+        )
+        .add_systems(
+            Update,
+            (
                 exit_system,
                 exit_event_listener,
                 window_close_system,
@@ -54,9 +63,8 @@ fn main() {
                 ant_selection_system,
                 selected_ant_display_system,
                 selected_ant_outline_system,
-                performance_analysis_system,
                 update_debug_ui,
-            ).chain()
+            )
         )
         .add_systems(Update, video_recording_system.after(performance_analysis_system))
         .run();
@@ -141,6 +149,19 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
                 food_carry_start_time: 0.0, // When ant picked up food
                 last_goal_achievement_time: 0.0, // Initialize as never achieved a goal
                 current_goal_start_time: 0.0, // Will be set when startup timer expires
+                
+                // Initialize new diagnostic fields
+                can_see_trail: false,
+                distance_from_trail: f32::INFINITY,
+                trail_following_time: 0.0,
+                last_trail_contact_time: 0.0,
+                is_swarming: false,
+                nearby_ant_count: 0,
+                time_since_progress: 0.0,
+                exploration_efficiency: 0.0,
+                is_edge_wanderer: false,
+                world_edge_proximity: 0.0,
+                trail_gradient_strength: 0.0,
             },
             Velocity {
                 x: (rand::random::<f32>() * 2.0 - 1.0) * 1.5,

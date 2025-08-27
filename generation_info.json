@@ -1,13 +1,13 @@
 {
-  "current_generation": 76,
-  "description": "Generation 75",
+  "current_generation": 82,
+  "description": "Enhanced behavioral fixes - aggressive anti-swarming and center-seeking recovery",
   "performance_metrics": {
-    "average_return_time_seconds": 6.097370624542236,
-    "average_time_since_goal_seconds": 18.253755569458008,
+    "average_return_time_seconds": 5.904757499694824,
+    "average_time_since_goal_seconds": 14.020734786987305,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 160,
-    "total_food_collected": 169.0
+    "successful_deliveries": 139,
+    "total_food_collected": 155.0
   },
-  "timestamp": "2025-08-27T05:08:03Z",
-  "video_filename": "0075_generation_75.mp4"
+  "timestamp": "2025-08-27T05:36:40Z",
+  "video_filename": "0081_enhanced_behavioral_fixes_-_aggressive_anti-swarming_and_center-seeking_recovery.mp4"
 }
