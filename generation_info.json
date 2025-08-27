@@ -1,13 +1,13 @@
 {
-  "current_generation": 82,
-  "description": "Enhanced behavioral fixes - aggressive anti-swarming and center-seeking recovery",
+  "current_generation": 87,
+  "description": "Cycle 5",
   "performance_metrics": {
-    "average_return_time_seconds": 5.904757499694824,
-    "average_time_since_goal_seconds": 14.020734786987305,
+    "average_return_time_seconds": 5.583150386810303,
+    "average_time_since_goal_seconds": 12.905789375305176,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 139,
-    "total_food_collected": 155.0
+    "successful_deliveries": 203,
+    "total_food_collected": 221.0
   },
-  "timestamp": "2025-08-27T05:36:40Z",
-  "video_filename": "0081_enhanced_behavioral_fixes_-_aggressive_anti-swarming_and_center-seeking_recovery.mp4"
+  "timestamp": "2025-08-27T15:45:56Z",
+  "video_filename": "0086_cycle_5.mp4"
 }

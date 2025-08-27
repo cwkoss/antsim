@@ -1,5 +1,5 @@
 {
-  "current_generation": 81,
+  "current_generation": 86,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -1246,6 +1246,86 @@
       },
       "timestamp": "2025-08-27T05:33:36Z",
       "video_filename": "0080_parameter_optimization_based_on_diagnostic_insights_-_stronger_trails_and_enhanced_following.mp4"
+    },
+    {
+      "description": "Cycle 1: Balanced anti-swarming - preserve delivery efficiency while preventing severe crowding",
+      "generation": 82,
+      "key_changes": [
+        "Generation 82 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.904757499694824,
+        "average_time_since_goal_seconds": 14.020734786987305,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 139,
+        "total_food_collected": 155.0
+      },
+      "timestamp": "2025-08-27T05:36:40Z",
+      "video_filename": "0081_enhanced_behavioral_fixes_-_aggressive_anti-swarming_and_center-seeking_recovery.mp4"
+    },
+    {
+      "description": "Cycle 2: Enhanced trail detection and following persistence - better path stability",
+      "generation": 83,
+      "key_changes": [
+        "Generation 83 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.420707702636719,
+        "average_time_since_goal_seconds": 17.235763549804688,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 188,
+        "total_food_collected": 203.0
+      },
+      "timestamp": "2025-08-27T15:35:49Z",
+      "video_filename": "0082_cycle_1.mp4"
+    },
+    {
+      "description": "Cycle 3: Systematic exploration with spiral search pattern for lost ants",
+      "generation": 84,
+      "key_changes": [
+        "Generation 84 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.868411064147949,
+        "average_time_since_goal_seconds": 27.70348358154297,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 141,
+        "total_food_collected": 150.0
+      },
+      "timestamp": "2025-08-27T15:38:23Z",
+      "video_filename": "0083_cycle_2.mp4"
+    },
+    {
+      "description": "Cycle 4: Optimized spiral search - faster coverage and sensing for lost ants",
+      "generation": 85,
+      "key_changes": [
+        "Generation 85 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.403351783752441,
+        "average_time_since_goal_seconds": 20.70779800415039,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 181,
+        "total_food_collected": 190.0
+      },
+      "timestamp": "2025-08-27T15:41:03Z",
+      "video_filename": "0084_cycle_3.mp4"
+    },
+    {
+      "description": "Cycle 5: Final optimization - enhanced spiral search and increased trail deposition",
+      "generation": 86,
+      "key_changes": [
+        "Generation 86 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.687220096588135,
+        "average_time_since_goal_seconds": 12.407156944274902,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 173,
+        "total_food_collected": 191.0
+      },
+      "timestamp": "2025-08-27T15:43:29Z",
+      "video_filename": "0085_cycle_4.mp4"
     }
   ],
   "next_planned_improvements": [

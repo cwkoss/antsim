@@ -40,10 +40,10 @@ impl Default for SimConfig {
             
             base_exploration_noise: 0.02,    // GENERATION 79: Revert to successful Generation 79 base
             follow_gain: 3.5,       // GENERATION 79: Revert to successful Generation 79 base
-            lay_rate_food: 40.0,    // GENERATION 79: Revert to successful Generation 79 base
+            lay_rate_food: 42.0,    // CYCLE 5: Slightly increased trail deposition
             lay_rate_nest: 0.0,     // EXPERIMENT: Zero nest pheromone to eliminate trail confusion
             food_quality_weight: 1.0,
-            detection_threshold: 0.0008,  // GENERATION 79: Revert to successful Generation 79 base
+            detection_threshold: 0.0008,  // CYCLE 3: Revert to Gen 79 base
             saturation_limit: 10.0,    // GENERATION 75: Revert to optimal saturation level
         }
     }

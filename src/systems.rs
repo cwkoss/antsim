@@ -244,26 +244,23 @@ pub fn sensing_system(
                     }
                 }
                 
-                // ENHANCED ANTI-SWARMING: Dynamic traffic management
+                // CYCLE 4: Refined anti-swarming with spiral assistance 
                 let swarming_penalty = if ant.is_swarming && ant.nearby_ant_count >= 4 {
-                    // Severe swarming - force alternative behavior
-                    let penalty_factor = (ant.nearby_ant_count as f32 * 0.4).min(0.9);
+                    // Only intervene for severe crowding (5+ ants)
+                    let penalty_factor = (ant.nearby_ant_count as f32 * 0.15).min(0.5);
                     max_pheromone *= 1.0 - penalty_factor;
                     
-                    // Stronger deviation for severe traffic
-                    let random_deviation = (rand::random::<f32>() - 0.5) * 0.8;
+                    // Gentle deviation to maintain trail efficiency
+                    let random_deviation = (rand::random::<f32>() - 0.5) * 0.3;
                     best_direction += random_deviation;
                     
-                    // Force shorter sensing intervals to adapt faster
-                    ant.sensing_timer = ant.sensing_timer.min(0.3);
-                    
                     penalty_factor
-                } else if ant.is_swarming {
-                    // Light swarming - gentle dispersal
-                    let penalty_factor = 0.3;
+                } else if ant.is_swarming && ant.trail_following_time > 3.0 {
+                    // Only light intervention for persistent swarming
+                    let penalty_factor = 0.15;
                     max_pheromone *= 1.0 - penalty_factor;
                     
-                    let random_deviation = (rand::random::<f32>() - 0.5) * 0.4;
+                    let random_deviation = (rand::random::<f32>() - 0.5) * 0.2;
                     best_direction += random_deviation;
                     
                     penalty_factor
@@ -279,8 +276,8 @@ pub fn sensing_system(
                         if angle_diff > 0.0 { angle_diff - std::f32::consts::TAU } else { angle_diff + std::f32::consts::TAU }
                     } else { angle_diff };
                     
-                    // Slightly enhanced gradual direction adjustment for better path persistence
-                    ant.current_direction += smooth_angle_change * 0.22; // Conservative reduction for improved path stability
+                    // CYCLE 3: Revert to balanced path following
+                    ant.current_direction += smooth_angle_change * 0.22; // Revert to successful setting
                     set_ant_velocity(&mut velocity, ant.current_direction, MovementType::FollowingTrail);
                     
                     // Back to Generation 51 successful sensing intervals
@@ -322,14 +319,26 @@ pub fn sensing_system(
                             (time.elapsed_seconds() - 1.0).max(0.0) // Startup was 1.0s
                         };
                         
-                        // Revert to original exploration angles
-                        let exploration_factor = (search_time / 60.0).min(1.0); // 0.0 to 1.0 over 60 seconds
-                        let base_angle = 1.2; // Restore original exploration range
-                        let max_angle = 2.2;  // Restore original exploration range
-                        let angle_range = base_angle + (max_angle - base_angle) * exploration_factor;
+                        // CYCLE 3: Smarter exploration with spiral search pattern for lost ants
+                        let exploration_factor = (search_time / 60.0).min(1.0);
                         
-                        let angle_change = (rand::random::<f32>() - 0.5) * angle_range;
-                        ant.current_direction += angle_change;
+                        if ant.time_since_progress > 10.0 {
+                            // CYCLE 5: Earlier and more optimized spiral search
+                            let lost_duration = ant.time_since_progress - 10.0;
+                            let spiral_angle = lost_duration * 1.0; // Even faster spiral
+                            ant.current_direction += spiral_angle.sin() * 0.45; // Slightly more aggressive
+                            
+                            // Very frequent sensing for rapid trail discovery
+                            ant.sensing_timer = ant.sensing_timer.min(0.35);
+                        } else {
+                            // Normal exploration
+                            let base_angle = 1.2;
+                            let max_angle = 2.2;
+                            let angle_range = base_angle + (max_angle - base_angle) * exploration_factor;
+                            
+                            let angle_change = (rand::random::<f32>() - 0.5) * angle_range;
+                            ant.current_direction += angle_change;
+                        }
                         set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
                         
                         // Back to Generation 51 successful exploration sensing
