@@ -1,5 +1,5 @@
 {
-  "current_generation": 72,
+  "current_generation": 75,
   "generations": [
     {
       "description": "Initial pheromone visualization implementation - replaced artificial gradients with real pheromone trail data in video capture",
@@ -1102,6 +1102,54 @@
       },
       "timestamp": "2025-08-27T04:51:08Z",
       "video_filename": "0071_generation_71.mp4"
+    },
+    {
+      "description": "Generation 73: Fine-tuned pheromone persistence optimization",
+      "generation": 73,
+      "key_changes": [
+        "Generation 73 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.743232727050781,
+        "average_time_since_goal_seconds": 7.60291862487793,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 240,
+        "total_food_collected": 251.0
+      },
+      "timestamp": "2025-08-27T04:53:31Z",
+      "video_filename": "0072_generation_72.mp4"
+    },
+    {
+      "description": "Generation 74: Higher saturation limit for stronger established trails",
+      "generation": 74,
+      "key_changes": [
+        "Generation 74 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 6.256507396697998,
+        "average_time_since_goal_seconds": 25.125185012817383,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 150,
+        "total_food_collected": 162.0
+      },
+      "timestamp": "2025-08-27T05:03:39Z",
+      "video_filename": "0073_generation_73.mp4"
+    },
+    {
+      "description": "Generation 75: Maximum trail-following sensitivity for precision pathfinding",
+      "generation": 75,
+      "key_changes": [
+        "Generation 75 completed"
+      ],
+      "performance_metrics": {
+        "average_return_time_seconds": 5.366645812988281,
+        "average_time_since_goal_seconds": 11.037732124328612,
+        "simulation_duration_seconds": 90,
+        "successful_deliveries": 205,
+        "total_food_collected": 218.0
+      },
+      "timestamp": "2025-08-27T05:05:50Z",
+      "video_filename": "0074_generation_74.mp4"
     }
   ],
   "next_planned_improvements": [

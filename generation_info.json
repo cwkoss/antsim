@@ -1,13 +1,13 @@
 {
-  "current_generation": 73,
-  "description": "Generation 72",
+  "current_generation": 76,
+  "description": "Generation 75",
   "performance_metrics": {
-    "average_return_time_seconds": 5.743232727050781,
-    "average_time_since_goal_seconds": 7.60291862487793,
+    "average_return_time_seconds": 6.097370624542236,
+    "average_time_since_goal_seconds": 18.253755569458008,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 240,
-    "total_food_collected": 251.0
+    "successful_deliveries": 160,
+    "total_food_collected": 169.0
   },
-  "timestamp": "2025-08-27T04:53:31Z",
-  "video_filename": "0072_generation_72.mp4"
+  "timestamp": "2025-08-27T05:08:03Z",
+  "video_filename": "0075_generation_75.mp4"
 }
