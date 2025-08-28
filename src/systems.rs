@@ -54,11 +54,19 @@ fn set_ant_velocity_from_vector(velocity: &mut Velocity, direction_vec: Vec2, mo
 
 pub fn sensing_system(
     mut ants: Query<(Entity, &Transform, &mut AntState, &mut Velocity, Option<&DebugAnt>)>,
-    pheromone_grid: Option<Res<PheromoneGrid>>,
+    rocks: Query<(&Transform, &Rock), Without<AntState>>,
+    mut pheromone_grid: Option<ResMut<PheromoneGrid>>,
     config: Res<SimConfig>,
     time: Res<Time>,
 ) {
-    if let Some(grid) = pheromone_grid {
+    if let Some(mut grid) = pheromone_grid {
+        // CYCLE 17: Pre-collect all ant positions and success data for formation flying
+        let ant_positions: Vec<(Entity, Vec2, bool, u32)> = ants.iter()
+            .map(|(entity, transform, ant, _, _)| {
+                (entity, transform.translation.truncate(), ant.carrying_food, ant.successful_deliveries)
+            })
+            .collect();
+        
         for (entity, transform, mut ant, mut velocity, debug_ant) in ants.iter_mut() {
             let pos = transform.translation;
             let delta_time = time.delta_seconds();
@@ -83,20 +91,330 @@ pub fn sensing_system(
                 continue;
             }
             
-            // For carrying food: use simple nest-seeking behavior to avoid pheromone confusion
+            // For carrying food: use nest pheromone following with smart obstacle avoidance
             if ant.carrying_food {
-                // Simple direct navigation to nest when carrying food
-                let nest_pos = Vec2::ZERO; // Nest is at origin
-                let to_nest = nest_pos - Vec2::new(pos.x, pos.y);
-                let distance_to_nest = to_nest.length();
+                ant.sensing_timer = 0.2; // CYCLE 14: Ultra-fast sensing for food-carrying ants
                 
-                if distance_to_nest > 10.0 {
-                    let nest_direction = to_nest.normalize();
-                    ant.current_direction = nest_direction.y.atan2(nest_direction.x);
-                    set_ant_velocity_from_vector(&mut velocity, nest_direction, MovementType::CarryingFood);
-                    ant.behavior_state = AntBehaviorState::Following;
+                // SIMPLIFIED NEST PHEROMONE FOLLOWING: Focus on stronger detection and faster following
+                if ant.sensing_timer <= 0.0 {
+                    let mut max_nest_pheromone = 0.0;
+                    let mut best_pheromone_direction = ant.current_direction;
+                    let mut found_nest_trail = false;
+                    
+                    // Enhanced 12-direction sampling with better range
+                    for i in 0..12 {
+                        let angle = (i as f32) * std::f32::consts::TAU / 12.0;
+                        let sample_x = pos.x + angle.cos() * 20.0; // Increased range
+                        let sample_y = pos.y + angle.sin() * 20.0;
+                        
+                        let nest_strength = grid.sample_directional(sample_x, sample_y, angle, 8.0, PheromoneType::Nest);
+                        
+                        // Lower threshold and momentum bonus for better trail detection
+                        if nest_strength > 0.05 { // Much lower threshold
+                            // Momentum bonus: prefer directions closer to current heading
+                            let angle_diff = (angle - ant.current_direction).abs();
+                            let angle_diff_normalized = if angle_diff > std::f32::consts::PI {
+                                std::f32::consts::TAU - angle_diff
+                            } else {
+                                angle_diff
+                            };
+                            let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.2;
+                            
+                            let effective_strength = nest_strength + momentum_bonus;
+                            
+                            if effective_strength > max_nest_pheromone {
+                                max_nest_pheromone = effective_strength;
+                                best_pheromone_direction = angle;
+                                found_nest_trail = true;
+                            }
+                        }
+                    }
+                    
+                    // If we found a good nest trail, follow it (with rock avoidance and loop detection)
+                    if found_nest_trail {
+                        // CYCLE 19: Loop detection - if following trails but not making progress, occasionally break away
+                        let should_break_from_trail = ant.time_since_progress > 12.0 && 
+                                                     ant.behavior_state == AntBehaviorState::Following &&
+                                                     (time.elapsed_seconds() * ant.successful_deliveries as f32 + 1.0).sin() > 0.7; // Occasional break-away
+                        
+                        if !should_break_from_trail {
+                            // Check if the pheromone direction is safe from rocks
+                            let test_pos = Vec2::new(pos.x, pos.y) + Vec2::new(best_pheromone_direction.cos(), best_pheromone_direction.sin()) * 40.0;
+                            let mut pheromone_path_safe = true;
+                            
+                            for (rock_transform, rock) in rocks.iter() {
+                                let rock_pos = Vec2::new(rock_transform.translation.x, rock_transform.translation.y);
+                                let distance_to_rock = test_pos.distance(rock_pos);
+                                
+                                if distance_to_rock < rock.radius + 30.0 {
+                                    pheromone_path_safe = false;
+                                    break;
+                                }
+                            }
+                            
+                            if pheromone_path_safe {
+                                // SIMPLIFIED: Smooth but decisive nest trail following
+                                let direction_change = best_pheromone_direction - ant.current_direction;
+                                let smooth_direction_change = if direction_change.abs() > std::f32::consts::PI {
+                                    if direction_change > 0.0 { direction_change - std::f32::consts::TAU } else { direction_change + std::f32::consts::TAU }
+                                } else { direction_change };
+                                
+                                // More aggressive turning for nest trails - we want to get home quickly
+                                ant.current_direction += smooth_direction_change * 0.4;
+                                
+                                set_ant_velocity(&mut velocity, ant.current_direction, MovementType::FollowingTrail);
+                                ant.behavior_state = AntBehaviorState::Following;
+                                
+                                // Faster sensing for nest trails - frequent course corrections
+                                ant.sensing_timer = 0.1;
+                                continue; // Skip the pathfinding logic below
+                            } else {
+                                // ENHANCED NEST-SEEKING: No safe pheromone trail found, use intelligent nest-seeking
+                                let distance_to_nest = Vec2::new(pos.x, pos.y).length();
+                                
+                                if distance_to_nest < 100.0 {
+                                    // CLOSE TO NEST: Direct approach with obstacle avoidance
+                                    let to_nest = (Vec2::ZERO - Vec2::new(pos.x, pos.y)).normalize();
+                                    let direct_nest_angle = to_nest.y.atan2(to_nest.x);
+                                    
+                                    // Check if direct path to nest is safe
+                                    let mut direct_path_safe = true;
+                                    let test_distance = distance_to_nest.min(40.0);
+                                    let test_pos = Vec2::new(pos.x, pos.y) + to_nest * test_distance;
+                                    
+                                    for (rock_transform, rock) in rocks.iter() {
+                                        let rock_pos = Vec2::new(rock_transform.translation.x, rock_transform.translation.y);
+                                        if test_pos.distance(rock_pos) < rock.radius + 25.0 {
+                                            direct_path_safe = false;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if direct_path_safe {
+                                        // Direct path to nest is safe - go straight home!
+                                        ant.current_direction = direct_nest_angle;
+                                        set_ant_velocity(&mut velocity, direct_nest_angle, MovementType::CarryingFood);
+                                        ant.behavior_state = AntBehaviorState::Exploring;
+                                        ant.sensing_timer = 0.05; // Very frequent sensing near nest
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // ADAPTIVE SENSING: Adjust sensing frequency based on distance to nest
+                    let distance_to_nest = Vec2::new(pos.x, pos.y).length();
+                    ant.sensing_timer = if distance_to_nest < 150.0 {
+                        0.08 // Very frequent sensing when close to nest
+                    } else if distance_to_nest < 300.0 {
+                        0.12 // Frequent sensing at medium distance
+                    } else {
+                        0.15 // Standard sensing when far from nest
+                    };
                 }
-                ant.sensing_timer = 0.3; // Faster sensing for food-carrying ants returning to nest
+                
+                // Emergency behaviors for stuck ants
+                if pos.x.abs() > 470.0 || pos.y.abs() > 470.0 {
+                    // Force move toward world center
+                    let to_center = Vec2::ZERO - Vec2::new(pos.x, pos.y);
+                    let escape_direction = to_center.normalize();
+                    ant.current_direction = escape_direction.y.atan2(escape_direction.x);
+                    set_ant_velocity_from_vector(&mut velocity, escape_direction, MovementType::CarryingFood);
+                    ant.behavior_state = AntBehaviorState::Exploring;
+                } else {
+                    // Check if ant is stuck on/near a rock
+                    let mut on_rock = false;
+                    let mut nearest_rock_direction = 0.0f32;
+                    let mut min_distance = f32::INFINITY;
+                    
+                    for (rock_transform, rock) in rocks.iter() {
+                        let rock_pos = Vec2::new(rock_transform.translation.x, rock_transform.translation.y);
+                        let distance = Vec2::new(pos.x, pos.y).distance(rock_pos);
+                        
+                        if distance < rock.radius + 25.0 { // Expanded sensing range
+                            on_rock = true;
+                            if distance < min_distance {
+                                min_distance = distance;
+                                // Direction AWAY from rock
+                                let away_from_rock = Vec2::new(pos.x, pos.y) - rock_pos;
+                                nearest_rock_direction = away_from_rock.normalize().y.atan2(away_from_rock.normalize().x);
+                            }
+                        }
+                    }
+                    
+                    if on_rock && (ant.stuck_timer > 0.6 || min_distance < 35.0) { // CYCLE 13: Even faster reaction
+                        // CYCLE 15: Cooperative rock mapping - deposit warning pheromones
+                        let grid_pos = Vec2::new(pos.x, pos.y);
+                        if let Some(grid_idx) = grid.world_to_grid(grid_pos.x, grid_pos.y) {
+                            grid.alarm[grid_idx] += 2.0; // Strong warning signal for rock proximity
+                        }
+                        
+                        // CYCLE 9: Smart rock avoidance - curve toward nest while avoiding rock
+                        let to_nest = (Vec2::ZERO - Vec2::new(pos.x, pos.y)).normalize();
+                        let away_from_rock = Vec2::new(nearest_rock_direction.cos(), nearest_rock_direction.sin());
+                        
+                        // Blend away-from-rock with toward-nest for intelligent avoidance
+                        let smart_direction = (away_from_rock * 0.6 + to_nest * 0.4).normalize();
+                        ant.current_direction = smart_direction.y.atan2(smart_direction.x);
+                        set_ant_velocity(&mut velocity, ant.current_direction, MovementType::CarryingFood);
+                        ant.behavior_state = AntBehaviorState::Exploring;
+                        ant.sensing_timer = 0.1; // Quick re-sense
+                    } else if ant.sensing_timer <= 0.0 {
+                        let mut best_direction = ant.current_direction;
+                        
+                        // CYCLE 17: Find nearby successful leaders from pre-collected data
+                        let current_pos = Vec2::new(pos.x, pos.y);
+                        let nearby_leaders: Vec<(Vec2, u32)> = ant_positions.iter()
+                            .filter_map(|(other_entity, other_pos, carrying_food, successful_deliveries)| {
+                                if *other_entity == entity || !carrying_food || *successful_deliveries == 0 {
+                                    None
+                                } else {
+                                    let distance = current_pos.distance(*other_pos);
+                                    if distance < 30.0 {
+                                        Some((*other_pos, *successful_deliveries))
+                                    } else {
+                                        None
+                                    }
+                                }
+                            })
+                            .collect();
+                        
+                        // ENHANCED NEST-SEEKING: Intelligent nest-oriented pathfinding
+                        let nest_pos = Vec2::ZERO;
+                        let to_nest = (nest_pos - Vec2::new(pos.x, pos.y)).normalize();
+                        let ideal_direction = to_nest.y.atan2(to_nest.x);
+                        let distance_to_nest = Vec2::new(pos.x, pos.y).length();
+                        
+                        // ENHANCED PATHFINDING: Distance-aware nest-seeking with improved scoring
+                        let mut found_safe_path = false;
+                        let mut best_score = f32::NEG_INFINITY;
+                        
+                        // Adaptive direction testing based on distance to nest
+                        let num_directions = if distance_to_nest < 200.0 { 16 } else { 12 };
+                        let max_deviation = if distance_to_nest < 150.0 {
+                            std::f32::consts::PI / 3.0 // Wider search when close to nest
+                        } else {
+                            std::f32::consts::PI / 6.0 // Narrower focus when far
+                        };
+                        
+                        for i in 0..num_directions {
+                            let deviation = (i as f32 - (num_directions - 1) as f32 / 2.0) * max_deviation / (num_directions as f32 / 2.0);
+                            let test_angle = ideal_direction + deviation;
+                            
+                            // Adaptive lookahead: shorter when close to nest
+                            let test_distance = if distance_to_nest < 100.0 {
+                                20.0 // Short lookahead near nest
+                            } else {
+                                40.0 // Normal lookahead far from nest
+                            };
+                            
+                            let test_pos = Vec2::new(
+                                pos.x + test_angle.cos() * test_distance,
+                                pos.y + test_angle.sin() * test_distance
+                            );
+                            
+                            let mut path_score = 0.0;
+                            let mut is_safe = true;
+                            
+                            // Check world boundaries
+                            if test_pos.x.abs() > 475.0 || test_pos.y.abs() > 475.0 {
+                                is_safe = false;
+                            }
+                            
+                            if is_safe {
+                                // ENHANCED SCORING: Distance-aware nest-seeking optimization
+                                let path_direction = Vec2::new(test_angle.cos(), test_angle.sin());
+                                let nest_alignment = to_nest.dot(path_direction);
+                                
+                                // Distance-based nest alignment scoring
+                                let alignment_multiplier = if distance_to_nest < 150.0 {
+                                    150.0 // Very strong nest bias when close
+                                } else if distance_to_nest < 300.0 {
+                                    120.0 // Strong nest bias at medium distance
+                                } else {
+                                    100.0 // Standard nest bias when far
+                                };
+                                path_score += nest_alignment * alignment_multiplier;
+                                
+                                // Adaptive momentum bonus
+                                let current_direction_vec = Vec2::new(ant.current_direction.cos(), ant.current_direction.sin());
+                                let momentum_alignment = current_direction_vec.dot(path_direction);
+                                let momentum_bonus = if distance_to_nest < 100.0 {
+                                    15.0 // Reduced momentum near nest for better maneuvering
+                                } else {
+                                    25.0 // Standard momentum far from nest
+                                };
+                                path_score += momentum_alignment * momentum_bonus;
+                                
+                                // Progress bonus: reward paths that make clear progress toward nest
+                                let progress_bonus = if distance_to_nest > 200.0 {
+                                    let future_nest_distance = test_pos.length();
+                                    let distance_improvement = distance_to_nest - future_nest_distance;
+                                    distance_improvement * 2.0 // Bonus for making progress toward nest
+                                } else {
+                                    0.0 // Don't worry about progress when close
+                                };
+                                path_score += progress_bonus;
+                                
+                                // CYCLE 15: Cooperative rock avoidance using alarm pheromones
+                                if let Some(grid_idx) = grid.world_to_grid(test_pos.x, test_pos.y) {
+                                    let alarm_strength = grid.alarm[grid_idx];
+                                    path_score -= alarm_strength * 40.0; // Heavy penalty for alarm areas
+                                }
+                                
+                                // Enhanced rock avoidance scoring
+                                let mut min_rock_clearance = f32::INFINITY;
+                                for (rock_transform, rock) in rocks.iter() {
+                                    let rock_pos = Vec2::new(rock_transform.translation.x, rock_transform.translation.y);
+                                    let distance_to_rock = test_pos.distance(rock_pos);
+                                    let safety_buffer = rock.radius + 35.0; // Larger safety margin
+                                    
+                                    if distance_to_rock < safety_buffer {
+                                        is_safe = false;
+                                        break;
+                                    } else {
+                                        min_rock_clearance = min_rock_clearance.min(distance_to_rock - safety_buffer);
+                                    }
+                                }
+                                
+                                if is_safe {
+                                    // Reward good rock clearance (exponential benefit for safer paths)
+                                    path_score += (min_rock_clearance.min(60.0) * 1.5).powi(2) / 100.0;
+                                    
+                                    // CYCLE 17: Adaptive formation flying using pre-collected leader data
+                                    for (leader_pos, leader_deliveries) in &nearby_leaders {
+                                        let to_leader = (*leader_pos - test_pos).normalize_or_zero();
+                                        let path_to_leader_alignment = path_direction.dot(to_leader);
+                                        
+                                        // Bonus for following in the direction of successful ants (convoy effect)
+                                        let leadership_bonus = path_to_leader_alignment * (*leader_deliveries as f32).min(3.0) * 8.0;
+                                        path_score += leadership_bonus;
+                                    }
+                                    
+                                    if path_score > best_score {
+                                        best_score = path_score;
+                                        best_direction = test_angle;
+                                        found_safe_path = true;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if !found_safe_path {
+                            // Emergency: just try to move away from current position
+                            best_direction = ant.current_direction + 1.57; // Turn 90 degrees
+                        }
+                        
+                        ant.current_direction = best_direction;
+                        set_ant_velocity(&mut velocity, best_direction, MovementType::CarryingFood);
+                        
+                        // CYCLE 14: Keep ultra-fast sensing frequency for responsiveness
+                        ant.sensing_timer = 0.2;
+                        
+                        ant.behavior_state = if found_safe_path { AntBehaviorState::Following } else { AntBehaviorState::Exploring };
+                    }
+                }
             } else {
                 // For exploring ants: follow FOOD pheromones (trails left by successful ants who found food)
                 
@@ -116,6 +434,9 @@ pub fn sensing_system(
                 let mut best_direction = ant.current_direction;
                 let mut max_pheromone = 0.0;
                 let mut found_trail = false;
+                
+                // CYCLE 22: Collective swarm intelligence integration
+                let swarm_context = analyze_local_swarm_intelligence(pos.x, pos.y, &ant, entity, &ant_positions, time.elapsed_seconds());
                 
                 // DIAGNOSTIC ANALYSIS: Update ant-centric state tracking
                 let current_pheromone = pheromone_readings[0]; // Center position
@@ -188,40 +509,88 @@ pub fn sensing_system(
                             0.2 // Neutral bonus for unclear direction
                         };
                         
-                        // ADVANCED: Trail width analysis - check perpendicular directions for trail width
+                        // CYCLE 20: Dynamic trail width adaptation for highway detection
                         let perp_angle_1 = angle + std::f32::consts::PI / 2.0;
                         let perp_angle_2 = angle - std::f32::consts::PI / 2.0;
-                        let side_distance = 8.0;
-                        let left_pheromone = grid.sample_directional(pos.x, pos.y, perp_angle_1, side_distance, PheromoneType::Food);
-                        let right_pheromone = grid.sample_directional(pos.x, pos.y, perp_angle_2, side_distance, PheromoneType::Food);
-                        // Enhanced trail width detection: check both near and far perpendicular positions
+                        
+                        // Multi-layer sampling: near (core trail), mid (established width), far (highway detection)
                         let near_left = grid.sample_directional(pos.x, pos.y, perp_angle_1, 5.0, PheromoneType::Food);
                         let near_right = grid.sample_directional(pos.x, pos.y, perp_angle_2, 5.0, PheromoneType::Food);
-                        let trail_width_strength = (left_pheromone + right_pheromone + near_left + near_right) / 4.0;
-                        let trail_width_factor = 1.0 + trail_width_strength * 0.2; // Enhanced width bonus for well-established trails
+                        let mid_left = grid.sample_directional(pos.x, pos.y, perp_angle_1, 10.0, PheromoneType::Food);
+                        let mid_right = grid.sample_directional(pos.x, pos.y, perp_angle_2, 10.0, PheromoneType::Food);
+                        let far_left = grid.sample_directional(pos.x, pos.y, perp_angle_1, 18.0, PheromoneType::Food);
+                        let far_right = grid.sample_directional(pos.x, pos.y, perp_angle_2, 18.0, PheromoneType::Food);
                         
-                        // LINE-FOLLOWING: Detect if ant is off-center and bias toward trail center
-                        let left_side_strength = (left_pheromone + near_left) / 2.0;
-                        let right_side_strength = (right_pheromone + near_right) / 2.0;
-                        let centering_bonus = if left_side_strength > right_side_strength + 0.1 {
-                            // Trail is stronger on left side, bias slightly left to center on trail
-                            if (angle - ant.current_direction).abs() < std::f32::consts::PI / 4.0 { 0.3 } else { 0.0 }
-                        } else if right_side_strength > left_side_strength + 0.1 {
-                            // Trail is stronger on right side, bias slightly right to center on trail  
-                            if (angle - ant.current_direction).abs() < std::f32::consts::PI / 4.0 { 0.3 } else { 0.0 }
+                        // Detect highway patterns based on pheromone distribution width
+                        let core_strength = (near_left + near_right) / 2.0;
+                        let mid_strength = (mid_left + mid_right) / 2.0;
+                        let far_strength = (far_left + far_right) / 2.0;
+                        
+                        let trail_width_factor = if core_strength > 0.3 && mid_strength > 0.2 && far_strength > 0.1 {
+                            1.5 // SUPERHIGHWAY - massive bonus for ultra-wide established trails
+                        } else if core_strength > 0.2 && mid_strength > 0.15 {
+                            1.35 // HIGHWAY - major bonus for well-established wide trails  
+                        } else if core_strength > 0.15 && (mid_strength > 0.1 || far_strength > 0.08) {
+                            1.2 // WIDE TRAIL - good bonus for expanding trails
+                        } else if near_left > 0.1 || near_right > 0.1 {
+                            1.1 // STANDARD TRAIL - small bonus
                         } else {
-                            0.0 // Already centered on trail
+                            1.0 // NARROW TRAIL - no bonus
+                        };
+                        
+                        // CYCLE 21: Traffic flow optimization - lane assignment based on highway patterns
+                        let left_side_strength = (mid_left + near_left) / 2.0;
+                        let right_side_strength = (mid_right + near_right) / 2.0;
+                        
+                        // Detect if we're on a highway (wide trail with traffic)
+                        let is_highway = core_strength > 0.25 && mid_strength > 0.2;
+                        let total_side_strength = left_side_strength + right_side_strength;
+                        
+                        let centering_bonus = if is_highway && total_side_strength > 0.3 {
+                            // HIGHWAY TRAFFIC RULES: Food-seeking ants prefer right side, food-carrying prefer left side
+                            let traffic_direction = Vec2::new(angle.cos(), angle.sin());
+                            let to_nest = (Vec2::ZERO - Vec2::new(pos.x, pos.y)).normalize();
+                            let toward_nest = traffic_direction.dot(to_nest) > 0.3; // Are we generally heading toward nest?
+                            
+                            if !ant.carrying_food {
+                                // Food-seeking ants: prefer right side of highway (away from nest traffic)
+                                if !toward_nest && right_side_strength > left_side_strength {
+                                    0.4 // Strong bonus for following outbound lane
+                                } else if toward_nest && left_side_strength > right_side_strength {
+                                    -0.2 // Small penalty for going against traffic flow
+                                } else {
+                                    0.1 // Default small bonus
+                                }
+                            } else {
+                                // Food-carrying ants: prefer left side of highway (toward nest)
+                                if toward_nest && left_side_strength > right_side_strength {
+                                    0.5 // Very strong bonus for following inbound lane
+                                } else if !toward_nest && right_side_strength > left_side_strength {
+                                    -0.1 // Small penalty for going wrong way
+                                } else {
+                                    0.2 // Default bonus
+                                }
+                            }
+                        } else {
+                            // Standard trail centering for non-highways
+                            if left_side_strength > right_side_strength + 0.1 {
+                                if (angle - ant.current_direction).abs() < std::f32::consts::PI / 4.0 { 0.3 } else { 0.0 }
+                            } else if right_side_strength > left_side_strength + 0.1 {
+                                if (angle - ant.current_direction).abs() < std::f32::consts::PI / 4.0 { 0.3 } else { 0.0 }
+                            } else {
+                                0.0 // Already centered on trail
+                            }
                         };
                         
                         // SIMPLIFIED gradient system - reduce complexity to prevent oscillation
                         let immediate_gradient = pheromone_strength - current_pheromone;
                         
-                        let gradient_bonus = if immediate_gradient > 0.1 {
+                        let gradient_bonus = if immediate_gradient > 0.08 { // CYCLE 10: More sensitive gradient detection
                             // Clear improvement - moving toward stronger pheromone
-                            0.4
-                        } else if immediate_gradient < -0.1 {
+                            0.45 // CYCLE 10: Slightly stronger gradient bonus
+                        } else if immediate_gradient < -0.08 {
                             // Clear decline - moving away from strong pheromone
-                            -0.3
+                            -0.35 // CYCLE 10: Stronger avoidance of declining trails
                         } else {
                             // Marginal differences - neutral to reduce micro-oscillation
                             0.0
@@ -234,7 +603,32 @@ pub fn sensing_system(
                             momentum_bonus
                         };
                         
-                        let effective_strength = pheromone_strength * trail_width_factor + hybrid_momentum + gradient_bonus + persistence_bonus + trail_direction_bonus + centering_bonus;
+                        // CYCLE 15: Cooperative rock avoidance - check for alarm pheromones
+                        let sample_x = pos.x + angle.cos() * 15.0;
+                        let sample_y = pos.y + angle.sin() * 15.0;
+                        let alarm_penalty = if let Some(grid_idx) = grid.world_to_grid(sample_x, sample_y) {
+                            grid.alarm[grid_idx] * -20.0 // Penalty for moving toward rock warning areas
+                        } else {
+                            0.0
+                        };
+                        
+                        // CYCLE 22: Add collective intelligence bonus to trail following
+                        let collective_intelligence_bonus = calculate_collective_intelligence_bonus(
+                            angle, pheromone_strength, &swarm_context, ant.current_direction
+                        );
+                        
+                        // Emergency swarm dispersion if too many ants are failing in this area
+                        let dispersion_penalty = if swarm_context.local_failure_rate > 0.6 && swarm_context.ant_density > 5 {
+                            if (angle - swarm_context.average_failed_direction).abs() > 1.5 {
+                                0.8 // Strong bonus for moving away from failed attempts
+                            } else {
+                                -0.5 // Penalty for following failed paths
+                            }
+                        } else {
+                            0.0
+                        };
+                        
+                        let effective_strength = pheromone_strength * trail_width_factor + hybrid_momentum + gradient_bonus + persistence_bonus + trail_direction_bonus + centering_bonus + alarm_penalty + collective_intelligence_bonus + dispersion_penalty;
                         
                         if effective_strength > max_pheromone {
                             max_pheromone = effective_strength;
@@ -244,10 +638,19 @@ pub fn sensing_system(
                     }
                 }
                 
-                // CYCLE 4: Refined anti-swarming with spiral assistance 
+                // CYCLE 21: Advanced congestion management with highway awareness
                 let swarming_penalty = if ant.is_swarming && ant.nearby_ant_count >= 4 {
-                    // Only intervene for severe crowding (5+ ants)
-                    let penalty_factor = (ant.nearby_ant_count as f32 * 0.15).min(0.5);
+                    // Detect if we're in highway congestion vs regular swarming
+                    let highway_congestion = max_pheromone > 1.0 && ant.nearby_ant_count >= 6; // High pheromone + crowding = highway jam
+                    
+                    let penalty_factor = if highway_congestion {
+                        // Highway congestion - more aggressive intervention
+                        (ant.nearby_ant_count as f32 * 0.2).min(0.6) 
+                    } else {
+                        // Regular swarming - gentler intervention
+                        (ant.nearby_ant_count as f32 * 0.12).min(0.4)
+                    };
+                    
                     max_pheromone *= 1.0 - penalty_factor;
                     
                     // Gentle deviation to maintain trail efficiency
@@ -269,8 +672,14 @@ pub fn sensing_system(
                 };
                 
                 if found_trail && max_pheromone > 0.2 {
-                    // Smooth direction change for trail following
-                    ant.behavior_state = AntBehaviorState::Following;
+                    // CYCLE 19: Loop detection for food-seeking ants
+                    let should_break_from_trail = ant.time_since_progress > 15.0 && 
+                                                 ant.behavior_state == AntBehaviorState::Following &&
+                                                 (time.elapsed_seconds() * (ant.successful_deliveries + 1) as f32).sin() > 0.8; // Rarer break-away for exploring ants
+                    
+                    if !should_break_from_trail {
+                        // Smooth direction change for trail following
+                        ant.behavior_state = AntBehaviorState::Following;
                     let angle_diff = best_direction - ant.current_direction;
                     let smooth_angle_change = if angle_diff.abs() > std::f32::consts::PI {
                         if angle_diff > 0.0 { angle_diff - std::f32::consts::TAU } else { angle_diff + std::f32::consts::TAU }
@@ -287,7 +696,19 @@ pub fn sensing_system(
                     } else {
                         0.8 + trail_strength_factor * 0.4 // 0.8-1.2s for weak trails - less frequent sensing
                     };
+                    } // End of !should_break_from_trail condition
                 } else {
+                    // CYCLE 22: Collective exploration when no trails detected
+                    if swarm_context.should_use_collective_exploration {
+                        // Coordinate exploration with nearby ants to avoid redundant searching
+                        ant.current_direction = swarm_context.suggested_exploration_direction;
+                        set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Exploring);
+                        ant.behavior_state = AntBehaviorState::Exploring;
+                        ant.sensing_timer = 0.8; // Moderate sensing for coordinated exploration
+                        ant.time_since_progress = 0.0;
+                        continue;
+                    }
+                    
                     // No trail found - random exploration
                     ant.behavior_state = AntBehaviorState::Exploring;
                     
@@ -329,7 +750,7 @@ pub fn sensing_system(
                             ant.current_direction += spiral_angle.sin() * 0.45; // Slightly more aggressive
                             
                             // Very frequent sensing for rapid trail discovery
-                            ant.sensing_timer = ant.sensing_timer.min(0.35);
+                            ant.sensing_timer = ant.sensing_timer.min(0.3); // CYCLE 14: Faster trail discovery
                         } else {
                             // Normal exploration
                             let base_angle = 1.2;
@@ -544,26 +965,50 @@ pub fn behavior_analysis_system(
 
 pub fn movement_system(
     mut ants: Query<(&mut Transform, &Velocity, &AntState)>,
+    rocks: Query<(&Transform, &Rock), Without<AntState>>,
     time: Res<Time>,
 ) {
     let delta_time = time.delta_seconds();
     
-    for (mut transform, velocity, _ant_state) in ants.iter_mut() {
-        transform.translation.x += velocity.x * delta_time;
-        transform.translation.y += velocity.y * delta_time;
+    for (mut ant_transform, velocity, _ant_state) in ants.iter_mut() {
+        // Calculate proposed new position
+        let new_x = ant_transform.translation.x + velocity.x * delta_time;
+        let new_y = ant_transform.translation.y + velocity.y * delta_time;
+        let new_position = Vec2::new(new_x, new_y);
+        
+        // Check for collision with rocks
+        let mut collision_detected = false;
+        
+        for (rock_transform, rock) in rocks.iter() {
+            let rock_pos = Vec2::new(rock_transform.translation.x, rock_transform.translation.y);
+            let distance = new_position.distance(rock_pos);
+            let ant_radius = 6.0; // Half the ant size (12x12)
+            
+            if distance < rock.radius + ant_radius {
+                collision_detected = true;
+                break;
+            }
+        }
+        
+        // If no collision detected, apply the movement
+        if !collision_detected {
+            ant_transform.translation.x = new_x;
+            ant_transform.translation.y = new_y;
+        }
+        // If collision detected, ant stays at current position (blocked by rock)
         
         // Keep ants within world bounds
         let bound = 480.0;
-        if transform.translation.x > bound {
-            transform.translation.x = bound;
-        } else if transform.translation.x < -bound {
-            transform.translation.x = -bound;
+        if ant_transform.translation.x > bound {
+            ant_transform.translation.x = bound;
+        } else if ant_transform.translation.x < -bound {
+            ant_transform.translation.x = -bound;
         }
         
-        if transform.translation.y > bound {
-            transform.translation.y = bound;
-        } else if transform.translation.y < -bound {
-            transform.translation.y = -bound;
+        if ant_transform.translation.y > bound {
+            ant_transform.translation.y = bound;
+        } else if ant_transform.translation.y < -bound {
+            ant_transform.translation.y = -bound;
         }
     }
 }
@@ -572,6 +1017,7 @@ pub fn pheromone_deposit_system(
     ants: Query<(&Transform, &AntState)>,
     mut pheromone_grid: Option<ResMut<PheromoneGrid>>,
     config: Res<SimConfig>,
+    time: Res<Time>,
 ) {
     if let Some(ref mut grid) = pheromone_grid {
         for (transform, ant) in ants.iter() {
@@ -591,42 +1037,186 @@ pub fn pheromone_deposit_system(
                     let deposit_pos = last_pos.lerp(current_pos, t);
                     
                     if ant.carrying_food {
-                        // Lay food trail when returning to nest
+                        // CYCLE 16: Enhanced trail quality based on ant success and efficiency
                         let decay_factor = (-ant.distance_from_food * 0.01).exp(); // Balanced distance decay rate
-                        let deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
                         
+                        // Quality multiplier based on ant success history
+                        let success_factor = if ant.successful_deliveries > 0 {
+                            1.0 + (ant.successful_deliveries as f32 * 0.1).min(0.5) // Up to 50% bonus for experienced ants
+                        } else {
+                            0.8 // Slight penalty for unproven ants
+                        };
+                        
+                        // Efficiency bonus for ants making progress vs stuck ants
+                        let efficiency_factor = if ant.time_since_progress < 5.0 {
+                            1.2 // 20% bonus for ants making good progress
+                        } else if ant.time_since_progress > 15.0 {
+                            0.6 // 40% penalty for stuck ants
+                        } else {
+                            1.0
+                        };
+                        
+                        // Speed bonus for fast-moving ants (better path quality)
+                        let speed_factor = (movement_distance / 0.8).min(1.5); // Up to 50% bonus for fast ants
+                        
+                        let base_deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor * success_factor * efficiency_factor * speed_factor;
+                        
+                        // CYCLE 20: Collaborative trail widening - check for nearby trail activity
+                        let current_pheromone = grid.sample_directional(deposit_pos.x, deposit_pos.y, 0.0, 3.0, PheromoneType::Food);
+                        let traffic_factor = if current_pheromone > 2.0 {
+                            // High traffic area - widen the trail by depositing in adjacent areas
+                            1.3
+                        } else if current_pheromone > 1.0 {
+                            // Moderate traffic - slight widening
+                            1.15
+                        } else {
+                            1.0 // New trail - normal deposit
+                        };
+                        
+                        let deposit_amount = base_deposit_amount * traffic_factor;
+                        
+                        // Primary deposit
                         grid.deposit(
                             deposit_pos.x, 
                             deposit_pos.y, 
                             PheromoneType::Food, 
-                            deposit_amount / (num_deposits + 1) as f32 // Distribute amount across deposits
+                            deposit_amount / (num_deposits + 1) as f32
+                        );
+                        
+                        // CYCLE 21: Lane-specific highway formation with traffic flow awareness
+                        if current_pheromone > 1.5 && ant.successful_deliveries > 1 {
+                            let movement_direction_3d = (current_pos - last_pos).normalize();
+                            let movement_direction = Vec2::new(movement_direction_3d.x, movement_direction_3d.y);
+                            let perp_angle = movement_direction.y.atan2(movement_direction.x) + std::f32::consts::PI / 2.0;
+                            
+                            // Determine which lane this ant should reinforce
+                            let to_nest = (Vec2::ZERO - Vec2::new(deposit_pos.x, deposit_pos.y)).normalize();
+                            let toward_nest = movement_direction.dot(to_nest) > 0.1;
+                            
+                            let side_deposit = deposit_amount * 0.35; // Increased side deposit for lane definition
+                            
+                            if toward_nest {
+                                // Food-carrying ant heading toward nest - strengthen left lane (inbound)
+                                let lane_offset = 3.5; // Closer to center for priority lane
+                                grid.deposit(
+                                    deposit_pos.x - perp_angle.cos() * lane_offset,
+                                    deposit_pos.y - perp_angle.sin() * lane_offset,
+                                    PheromoneType::Food,
+                                    side_deposit * 1.2 / (num_deposits + 1) as f32 // 20% bonus for inbound lane
+                                );
+                                
+                                // Light deposit on right lane for highway definition
+                                grid.deposit(
+                                    deposit_pos.x + perp_angle.cos() * 6.0,
+                                    deposit_pos.y + perp_angle.sin() * 6.0,
+                                    PheromoneType::Food,
+                                    side_deposit * 0.4 / (num_deposits + 1) as f32
+                                );
+                            } else {
+                                // Food-seeking ant heading away from nest - strengthen right lane (outbound)
+                                let lane_offset = 5.5; // Further from center
+                                grid.deposit(
+                                    deposit_pos.x + perp_angle.cos() * lane_offset,
+                                    deposit_pos.y + perp_angle.sin() * lane_offset,
+                                    PheromoneType::Food,
+                                    side_deposit / (num_deposits + 1) as f32
+                                );
+                                
+                                // Light deposit on left lane for highway definition
+                                grid.deposit(
+                                    deposit_pos.x - perp_angle.cos() * 4.0,
+                                    deposit_pos.y - perp_angle.sin() * 4.0,
+                                    PheromoneType::Food,
+                                    side_deposit * 0.6 / (num_deposits + 1) as f32
+                                );
+                            }
+                        }
+                        
+                        // NEST PHEROMONE FIX: Food-carrying ants should ALSO deposit strong nest pheromones!
+                        // This creates proven successful return paths for other food carriers to follow
+                        let distance_to_nest = Vec2::new(deposit_pos.x, deposit_pos.y).length();
+                        let nest_proximity_bonus = if distance_to_nest < 150.0 {
+                            2.0 // Very strong bonus when approaching nest
+                        } else if distance_to_nest < 300.0 {
+                            1.5 // Strong bonus for mid-range
+                        } else {
+                            1.0 // Standard rate for distant areas
+                        };
+                        
+                        // Success-based multiplier: experienced ants lay stronger nest trails
+                        let success_multiplier = 1.0 + (ant.successful_deliveries as f32 * 0.3).min(1.5);
+                        
+                        // Progress bonus: ants making good progress lay stronger trails
+                        let progress_bonus = if ant.time_since_progress < 5.0 {
+                            1.3 // Bonus for ants making good progress toward nest
+                        } else {
+                            0.8 // Reduced strength for struggling ants
+                        };
+                        
+                        let nest_deposit_amount = config.lay_rate_nest * nest_proximity_bonus * success_multiplier * progress_bonus;
+                        
+                        // Deposit strong nest pheromones along the successful return path
+                        grid.deposit(
+                            deposit_pos.x,
+                            deposit_pos.y,
+                            PheromoneType::Nest,
+                            nest_deposit_amount / (num_deposits + 1) as f32
                         );
                         
                     } else {
-                        // Lay nest trail when exploring
-                        let decay_factor = (-ant.distance_from_nest * 0.003).exp();
-                        let deposit_amount = config.lay_rate_nest * decay_factor;
+                        // NEST PHEROMONE FIX: Exploring ants should deposit minimal/no nest pheromones
+                        // Only successful food-carriers should create nest trails!
                         
-                        grid.deposit(
-                            deposit_pos.x, 
-                            deposit_pos.y, 
-                            PheromoneType::Nest, 
-                            deposit_amount / (num_deposits + 1) as f32 // Distribute amount across deposits
-                        );
+                        // Very weak nest pheromone from experienced exploring ants only
+                        if ant.has_found_food && ant.successful_deliveries > 0 {
+                            let time_since_nest = time.elapsed_seconds() - ant.current_goal_start_time;
+                            let time_decay = (-time_since_nest * 0.2).exp(); // Faster decay
+                            let weak_deposit = config.lay_rate_nest * 0.1 * time_decay; // Much weaker
+                            
+                            grid.deposit(
+                                deposit_pos.x,
+                                deposit_pos.y,
+                                PheromoneType::Nest,
+                                weak_deposit / (num_deposits + 1) as f32
+                            );
+                        }
+                        // Most exploring ants deposit NO nest pheromones
                     }
                 }
             } else {
                 // For very small movements, just deposit at current position
                 if ant.carrying_food {
+                    // Food pheromone deposition
                     let decay_factor = (-ant.distance_from_food * 0.005).exp();
-                    let deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
+                    let food_deposit_amount = config.lay_rate_food * config.food_quality_weight * decay_factor;
+                    grid.deposit(current_pos.x, current_pos.y, PheromoneType::Food, food_deposit_amount);
                     
-                    grid.deposit(current_pos.x, current_pos.y, PheromoneType::Food, deposit_amount);
+                    // NEST PHEROMONE FIX: Food-carrying ants ALSO deposit nest pheromones for small movements
+                    let distance_to_nest = Vec2::new(current_pos.x, current_pos.y).length();
+                    let nest_proximity_bonus = if distance_to_nest < 150.0 {
+                        2.0 // Very strong bonus when approaching nest
+                    } else if distance_to_nest < 300.0 {
+                        1.5 // Strong bonus for mid-range
+                    } else {
+                        1.0
+                    };
+                    
+                    let success_multiplier = 1.0 + (ant.successful_deliveries as f32 * 0.3).min(1.5);
+                    let progress_bonus = if ant.time_since_progress < 5.0 { 1.3 } else { 0.8 };
+                    let nest_deposit_amount = config.lay_rate_nest * nest_proximity_bonus * success_multiplier * progress_bonus;
+                    
+                    grid.deposit(current_pos.x, current_pos.y, PheromoneType::Nest, nest_deposit_amount);
                 } else {
-                    let decay_factor = (-ant.distance_from_nest * 0.003).exp();
-                    let deposit_amount = config.lay_rate_nest * decay_factor;
-                    
-                    grid.deposit(current_pos.x, current_pos.y, PheromoneType::Nest, deposit_amount);
+                    // NEST PHEROMONE FIX: Exploring ants deposit very little nest pheromone for small movements
+                    // Only experienced exploring ants deposit weak nest pheromones
+                    if ant.has_found_food && ant.successful_deliveries > 0 {
+                        let time_since_nest = time.elapsed_seconds() - ant.current_goal_start_time;
+                        let time_decay = (-time_since_nest * 0.2).exp();
+                        let weak_deposit = config.lay_rate_nest * 0.1 * time_decay; // Much weaker
+                        
+                        grid.deposit(current_pos.x, current_pos.y, PheromoneType::Nest, weak_deposit);
+                    }
+                    // Most exploring ants deposit NO nest pheromones for small movements
                 }
             }
         }
@@ -753,7 +1343,7 @@ pub fn food_collection_system(
             // Look for nest to drop off food
             let distance = ant_pos.distance(nest_pos);
             
-            if distance < 40.0 {
+            if distance < 15.0 { // Much smaller radius - ants must actually reach the nest
                 // Successful delivery
                 ant.carrying_food = false;
                 ant.delivery_attempts += 1;
@@ -785,7 +1375,7 @@ pub fn food_collection_system(
                 
                 // Start exploring again
                 ant.behavior_state = AntBehaviorState::Exploring;
-                ant.sensing_timer = 0.3;
+                ant.sensing_timer = 0.2; // CYCLE 14: Ultra-fast exploration sensing
                 ant.current_direction = rand::random::<f32>() * std::f32::consts::TAU;
                 set_ant_velocity(&mut velocity, ant.current_direction, MovementType::Legacy);
             }
@@ -858,10 +1448,7 @@ pub fn performance_analysis_system(
         exit_writer.send(AppExit::Success);
     }
     
-    if lost_food_carriers_count >= 10 {
-        println!("\n🚨 AUTO-EXIT: Too many lost food carriers ({})", lost_food_carriers_count);
-        exit_writer.send(AppExit::Success);
-    }
+    // Removed "too many lost food carriers" exit condition to allow more time for pathfinding
     
     if time.elapsed_seconds() > 90.0 {
         println!("\n🎉 SUCCESS: 90 seconds completed with {:.1}s avg goal time!", performance_tracker.average_time_since_goal);
@@ -1505,4 +2092,284 @@ pub fn selected_ant_outline_system(
             crate::components::AntOutline,
         ));
     }
+}
+
+// CYCLE 22: Collective swarm intelligence structures and functions
+#[derive(Clone)]
+struct SwarmContext {
+    ant_density: u32,
+    local_failure_rate: f32,
+    average_failed_direction: f32,
+    should_use_collective_exploration: bool,
+    suggested_exploration_direction: f32,
+    exploration_pressure: f32,
+    least_explored_direction: f32,
+    collective_confidence: f32,
+    successful_ant_directions: Vec<f32>,
+}
+
+// CYCLE 22: Analyze local swarm intelligence to make collective decisions
+fn analyze_local_swarm_intelligence(
+    x: f32, y: f32,
+    ant: &AntState,
+    entity: Entity,
+    ant_positions: &[(Entity, Vec2, bool, u32)],
+    current_time: f32
+) -> SwarmContext {
+    let current_pos = Vec2::new(x, y);
+    let mut context = SwarmContext {
+        ant_density: 0,
+        local_failure_rate: 0.0,
+        average_failed_direction: ant.current_direction,
+        should_use_collective_exploration: false,
+        suggested_exploration_direction: ant.current_direction,
+        exploration_pressure: 0.0,
+        least_explored_direction: 0.0,
+        collective_confidence: 0.5,
+        successful_ant_directions: Vec::new(),
+    };
+    
+    let mut nearby_ants = 0;
+    let mut struggling_ants = 0;
+    let mut successful_ants = 0;
+    let mut failed_directions = Vec::new();
+    let mut successful_directions = Vec::new();
+    let mut exploration_directions = Vec::new();
+    
+    // Analyze nearby ants within 60 unit radius for collective intelligence
+    for (other_entity, other_pos, carrying_food, successful_deliveries) in ant_positions.iter() {
+        if *other_entity == entity { continue; }
+        
+        let distance = current_pos.distance(*other_pos);
+        if distance > 60.0 { continue; }
+        
+        nearby_ants += 1;
+        
+        // Classify ant performance based on success metrics
+        if *successful_deliveries > 0 {
+            successful_ants += 1;
+            // Record directions of successful ants for collective following
+            let direction_to_successful = (*other_pos - current_pos).normalize();
+            successful_directions.push(direction_to_successful.y.atan2(direction_to_successful.x));
+        } else {
+            struggling_ants += 1;
+            // Record directions away from struggling ants
+            let direction_from_struggling = (current_pos - *other_pos).normalize();
+            failed_directions.push(direction_from_struggling.y.atan2(direction_from_struggling.x));
+        }
+        
+        // Track exploration patterns
+        if !carrying_food {
+            let exploration_dir = (*other_pos - current_pos).normalize();
+            exploration_directions.push(exploration_dir.y.atan2(exploration_dir.x));
+        }
+    }
+    
+    context.ant_density = nearby_ants;
+    
+    // Calculate local failure rate and collective confidence
+    if nearby_ants > 0 {
+        context.local_failure_rate = struggling_ants as f32 / nearby_ants as f32;
+        context.collective_confidence = successful_ants as f32 / nearby_ants as f32;
+        
+        // Calculate average direction of failed attempts
+        if !failed_directions.is_empty() {
+            let mut sum_x = 0.0;
+            let mut sum_y = 0.0;
+            for &dir in &failed_directions {
+                sum_x += dir.cos();
+                sum_y += dir.sin();
+            }
+            context.average_failed_direction = sum_y.atan2(sum_x);
+        }
+        
+        // Store successful directions for collective intelligence
+        context.successful_ant_directions = successful_directions;
+    }
+    
+    // Determine if collective exploration should be used
+    let exploration_threshold = if ant.time_since_progress > 8.0 {
+        0.3 // Lower threshold for struggling ants
+    } else {
+        0.6 // Higher threshold for doing-well ants
+    };
+    
+    context.should_use_collective_exploration = context.local_failure_rate > exploration_threshold && 
+                                               nearby_ants >= 3 &&
+                                               !context.successful_ant_directions.is_empty();
+    
+    if context.should_use_collective_exploration {
+        // Calculate least explored direction using directional analysis
+        let mut direction_coverage = [0u32; 8]; // 8 compass directions
+        
+        for &dir in &exploration_directions {
+            let compass_index = ((dir + std::f32::consts::PI) / (std::f32::consts::TAU / 8.0)) as usize % 8;
+            direction_coverage[compass_index] += 1;
+        }
+        
+        // Find direction with least exploration
+        let min_coverage = direction_coverage.iter().min().unwrap_or(&0);
+        let least_explored_index = direction_coverage.iter().position(|&x| x == *min_coverage).unwrap_or(0);
+        context.least_explored_direction = (least_explored_index as f32 * std::f32::consts::TAU / 8.0) - std::f32::consts::PI;
+        
+        // Suggest exploration direction with some randomization to avoid clustering
+        let base_exploration = context.least_explored_direction;
+        let randomization = (rand::random::<f32>() - 0.5) * 0.8;
+        context.suggested_exploration_direction = base_exploration + randomization;
+        
+        context.exploration_pressure = context.local_failure_rate;
+    }
+    
+    context
+}
+
+// CYCLE 22: Calculate collective intelligence bonus for trail following
+fn calculate_collective_intelligence_bonus(
+    angle: f32,
+    pheromone_strength: f32,
+    swarm_context: &SwarmContext,
+    current_direction: f32
+) -> f32 {
+    let mut bonus = 0.0;
+    
+    // High collective confidence: follow the wisdom of successful nearby ants
+    if swarm_context.collective_confidence > 0.6 && !swarm_context.successful_ant_directions.is_empty() {
+        // Calculate alignment with successful ant directions
+        let mut best_alignment = -1.0;
+        for &successful_dir in &swarm_context.successful_ant_directions {
+            let alignment = (angle.cos() * successful_dir.cos() + angle.sin() * successful_dir.sin());
+            if alignment > best_alignment {
+                best_alignment = alignment;
+            }
+        }
+        
+        if best_alignment > 0.5 {
+            bonus += 0.7 * swarm_context.collective_confidence; // Strong bonus for following successful ants
+        }
+    }
+    
+    // Low collective confidence: encourage exploration away from crowded areas
+    else if swarm_context.collective_confidence < 0.3 && swarm_context.ant_density > 4 {
+        // Bonus for moving away from average failed direction
+        let angle_diff = (angle - swarm_context.average_failed_direction).abs();
+        if angle_diff > std::f32::consts::PI / 2.0 {
+            bonus += 0.5; // Reward exploring opposite directions from failures
+        }
+    }
+    
+    // Distributed exploration coordination
+    if swarm_context.exploration_pressure > 0.5 {
+        let exploration_alignment = (angle.cos() * swarm_context.least_explored_direction.cos() + 
+                                   angle.sin() * swarm_context.least_explored_direction.sin());
+        if exploration_alignment > 0.4 {
+            bonus += 0.6 * swarm_context.exploration_pressure; // Bonus for systematic exploration
+        }
+    }
+    
+    bonus
+}
+
+// ENHANCED NEST PHEROMONE FOLLOWING: Advanced trail detection structure
+#[derive(Clone)]
+struct NestTrailResult {
+    found_trail: bool,
+    direction: f32,
+    strength: f32,
+    confidence: f32,
+    gradient_quality: f32,
+}
+
+// ENHANCED NEST PHEROMONE FOLLOWING: Advanced gradient-based nest trail detection
+fn find_best_nest_trail_direction(
+    x: f32, y: f32,
+    grid: &PheromoneGrid,
+    current_direction: f32,
+    successful_deliveries: u32
+) -> NestTrailResult {
+    let mut result = NestTrailResult {
+        found_trail: false,
+        direction: current_direction,
+        strength: 0.0,
+        confidence: 0.0,
+        gradient_quality: 0.0,
+    };
+    
+    // Enhanced sampling: 16 directions for higher precision
+    let num_directions = 16;
+    let mut best_score = 0.0;
+    let mut direction_scores = Vec::new();
+    
+    // Sample nest pheromones in multiple ranges for gradient analysis
+    for i in 0..num_directions {
+        let angle = (i as f32) * std::f32::consts::TAU / num_directions as f32;
+        
+        // Multi-range sampling for gradient detection
+        let near_sample_x = x + angle.cos() * 12.0;
+        let near_sample_y = y + angle.sin() * 12.0;
+        let mid_sample_x = x + angle.cos() * 20.0;
+        let mid_sample_y = y + angle.sin() * 20.0;
+        let far_sample_x = x + angle.cos() * 30.0;
+        let far_sample_y = y + angle.sin() * 30.0;
+        
+        let near_strength = grid.sample_directional(near_sample_x, near_sample_y, angle, 6.0, PheromoneType::Nest);
+        let mid_strength = grid.sample_directional(mid_sample_x, mid_sample_y, angle, 6.0, PheromoneType::Nest);
+        let far_strength = grid.sample_directional(far_sample_x, far_sample_y, angle, 6.0, PheromoneType::Nest);
+        
+        // Calculate gradient strength (positive = getting stronger toward nest)
+        let gradient = (near_strength - far_strength) * 2.0; // Amplify gradient signal
+        let average_strength = (near_strength + mid_strength + far_strength) / 3.0;
+        
+        // Momentum bonus: prefer directions close to current direction
+        let angle_diff = (angle - current_direction).abs();
+        let angle_diff_normalized = if angle_diff > std::f32::consts::PI {
+            std::f32::consts::TAU - angle_diff
+        } else {
+            angle_diff
+        };
+        let momentum_bonus = (1.0 - angle_diff_normalized / std::f32::consts::PI) * 0.3;
+        
+        // Experience bonus: experienced ants can follow weaker trails
+        let experience_bonus = if successful_deliveries > 2 {
+            0.2 // Experienced ants get bonus for subtle trails
+        } else {
+            0.0
+        };
+        
+        // Combined score: gradient + average strength + momentum + experience
+        let trail_score = gradient * 2.0 + average_strength * 1.5 + momentum_bonus + experience_bonus;
+        
+        direction_scores.push((angle, trail_score, average_strength, gradient.abs()));
+        
+        if trail_score > best_score && average_strength > 0.2 { // Higher threshold for nest trails
+            best_score = trail_score;
+            result.direction = angle;
+            result.strength = average_strength;
+            result.gradient_quality = gradient.abs();
+            result.found_trail = true;
+        }
+    }
+    
+    if result.found_trail {
+        // Calculate confidence based on how much better this direction is vs alternatives
+        let second_best_score = direction_scores.iter()
+            .map(|(_, score, _, _)| *score)
+            .filter(|&score| score < best_score)
+            .fold(0.0f32, f32::max);
+        
+        let score_advantage = best_score - second_best_score;
+        result.confidence = (score_advantage / (best_score + 0.1)).min(1.0);
+        
+        // Boost confidence for strong gradients
+        if result.gradient_quality > 0.5 {
+            result.confidence = (result.confidence + 0.3).min(1.0);
+        }
+        
+        // Distance to nest boost: closer to nest = higher confidence in nest trails
+        let distance_to_nest = Vec2::new(x, y).length();
+        if distance_to_nest < 200.0 {
+            result.confidence = (result.confidence + 0.2).min(1.0);
+        }
+    }
+    
+    result
 }

@@ -1,13 +1,13 @@
 {
-  "current_generation": 87,
-  "description": "Cycle 5",
+  "current_generation": 117,
+  "description": "COMPREHENSIVE NEST-SEEKING",
   "performance_metrics": {
-    "average_return_time_seconds": 5.583150386810303,
-    "average_time_since_goal_seconds": 12.905789375305176,
+    "average_return_time_seconds": 27.3330078125,
+    "average_time_since_goal_seconds": 34.295387268066406,
     "simulation_duration_seconds": 90,
-    "successful_deliveries": 203,
-    "total_food_collected": 221.0
+    "successful_deliveries": 38,
+    "total_food_collected": 61.0
   },
-  "timestamp": "2025-08-27T15:45:56Z",
-  "video_filename": "0086_cycle_5.mp4"
+  "timestamp": "2025-08-28T21:57:52Z",
+  "video_filename": "0116_comprehensive_nest-seeking.mp4"
 }

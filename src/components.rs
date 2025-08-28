@@ -259,3 +259,21 @@ pub struct PheromoneVisualization {
     pub grid_x: usize,
     pub grid_y: usize,
 }
+
+#[derive(Component)]
+pub struct Rock {
+    pub radius: f32,
+}
+
+#[derive(Resource)]
+pub struct ChallengeConfig {
+    pub challenge_number: u32,
+}
+
+impl Default for ChallengeConfig {
+    fn default() -> Self {
+        Self {
+            challenge_number: 1,
+        }
+    }
+}

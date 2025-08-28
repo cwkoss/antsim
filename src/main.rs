@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use std::env;
 
 mod components;
 mod systems;
@@ -15,10 +16,27 @@ use video::*;
 use colors::*;
 
 fn main() {
+    // Parse command line arguments for challenge selection
+    let args: Vec<String> = env::args().collect();
+    let mut challenge_number = 1u32;
+    
+    // Look for --challenge argument
+    for i in 0..args.len() {
+        if args[i] == "--challenge" && i + 1 < args.len() {
+            if let Ok(num) = args[i + 1].parse::<u32>() {
+                challenge_number = num;
+                println!("🎯 Running Challenge {}", challenge_number);
+                break;
+            }
+        }
+    }
+    
+    let challenge_config = ChallengeConfig { challenge_number };
+    
     App::new()
         .add_plugins(DefaultPlugins.set(bevy::window::WindowPlugin {
             primary_window: Some(bevy::window::Window {
-                title: "Ant Simulation".into(),
+                title: format!("Ant Simulation - Challenge {}", challenge_number).into(),
                 present_mode: bevy::window::PresentMode::AutoVsync,
                 ..default()
             }),
@@ -33,6 +51,7 @@ fn main() {
         .insert_resource(VideoRecorder::default())
         .insert_resource(ColorConfig::default())
         .insert_resource(GenerationInfo::from_json_file())
+        .insert_resource(challenge_config)
         .add_systems(Startup, (setup, setup_pheromone_visualization, setup_debug_ui, setup_video_camera))
         .add_systems(
             Update,
@@ -70,7 +89,7 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<ColorConfig>) {
+fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<ColorConfig>, challenge_config: Res<ChallengeConfig>) {
     commands.spawn(Camera2dBundle::default());
     
     // Add debug text to verify rendering
@@ -177,6 +196,7 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
     }
     
     // CHALLENGE MODE: All food sources FAR from nest (minimum 1/3 world size away)
+    let mut food_positions = Vec::new();
     for _i in 0..config.food_sources {
         let angle = rand::random::<f32>() * std::f32::consts::TAU;
         // Minimum distance = 1/3 world size = 333 units from nest
@@ -184,6 +204,8 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
         let distance = 333.0 + rand::random::<f32>() * 167.0; // 333-500 units away
         let x = angle.cos() * distance;
         let y = angle.sin() * distance;
+        
+        food_positions.push(Vec2::new(x, y));
         
         commands.spawn((
             SpriteBundle {
@@ -197,5 +219,53 @@ fn setup(mut commands: Commands, config: Res<SimConfig>, color_config: Res<Color
             },
             FoodSource { amount: 100.0, max_amount: 100.0 }, // Back to original food amount
         ));
+    }
+    
+    // Challenge 2: Add rocks halfway between nest and food sources
+    if challenge_config.challenge_number == 2 {
+        let nest_position = Vec2::new(0.0, 0.0);
+        let rock_radius = 15.0 * 1.5; // 50% wider than food sources (30.0 * 1.5 / 2)
+        
+        for food_pos in &food_positions {
+            // Place rock halfway between nest and food source
+            let midpoint = (nest_position + *food_pos) * 0.5;
+            
+            // Create circular rock using multiple small sprites
+            let rock_entity = commands.spawn((
+                SpatialBundle::from_transform(Transform::from_xyz(midpoint.x, midpoint.y, 3.0)),
+                Rock { radius: rock_radius },
+            )).id();
+            
+            // Fill the circle with small square sprites
+            let sprite_size = 4.0;
+            let num_steps = (rock_radius * 2.0 / sprite_size) as i32;
+            
+            for x_step in -num_steps..=num_steps {
+                for y_step in -num_steps..=num_steps {
+                    let x_offset = x_step as f32 * sprite_size;
+                    let y_offset = y_step as f32 * sprite_size;
+                    let distance_from_center = (x_offset * x_offset + y_offset * y_offset).sqrt();
+                    
+                    // Only place sprites within the circular boundary
+                    if distance_from_center <= rock_radius {
+                        commands.spawn(SpriteBundle {
+                            sprite: Sprite {
+                                color: Color::srgb(0.35, 0.3, 0.25),
+                                custom_size: Some(Vec2::new(sprite_size, sprite_size)),
+                                ..default()
+                            },
+                            transform: Transform::from_xyz(
+                                midpoint.x + x_offset,
+                                midpoint.y + y_offset,
+                                3.0
+                            ),
+                            ..default()
+                        });
+                    }
+                }
+            }
+        }
+        
+        println!("🪨 Challenge 2: Spawned {} rocks with radius {:.1} as obstacles", food_positions.len(), rock_radius);
     }
 }

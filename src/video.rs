@@ -27,6 +27,7 @@ pub fn video_recording_system(
     ant_query: Query<(&Transform, &AntState), (With<AntState>, Without<Nest>)>,
     food_query: Query<&Transform, (With<FoodSource>, Without<Nest>)>,
     nest_query: Query<&Transform, With<Nest>>,
+    rock_query: Query<(&Transform, &Rock), (With<Rock>, Without<AntState>)>,
 ) {
     // Start recording when simulation has been running for a bit
     if !video_recorder.is_recording {
@@ -45,7 +46,7 @@ pub fn video_recording_system(
             
             // Create visual frame with actual simulation data (capture whole simulation)
             capture_simulation_frame(&mut video_recorder, &performance_tracker, &generation_info, time.elapsed_seconds(), 
-                                   &pheromone_grid, &color_config, &ant_query, &food_query, &nest_query);
+                                   &pheromone_grid, &color_config, &ant_query, &food_query, &nest_query, &rock_query);
             
             
             // Debug: Print frame count periodically
@@ -78,6 +79,7 @@ fn capture_simulation_frame(
     ant_query: &Query<(&Transform, &AntState), (With<AntState>, Without<Nest>)>,
     food_query: &Query<&Transform, (With<FoodSource>, Without<Nest>)>,
     nest_query: &Query<&Transform, With<Nest>>,
+    rock_query: &Query<(&Transform, &Rock), (With<Rock>, Without<AntState>)>,
 ) {
     let target_width = video_recorder.frame_width;
     let target_height = video_recorder.frame_height;
@@ -204,6 +206,38 @@ fn capture_simulation_frame(
         }
     }
     
+    // Draw rocks (gray circles)
+    for (rock_transform, rock) in rock_query.iter() {
+        let rock_x = world_to_screen_x(rock_transform.translation.x);
+        let rock_y = world_to_screen_y(rock_transform.translation.y);
+        
+        // Convert rock radius to screen pixels
+        let rock_radius_pixels = ((rock.radius / world_size) * target_height as f32) as i32;
+        
+        // Draw rock as a filled circle
+        for dy in -rock_radius_pixels..=rock_radius_pixels {
+            for dx in -rock_radius_pixels..=rock_radius_pixels {
+                // Check if pixel is within circle
+                let distance_squared = dx * dx + dy * dy;
+                let radius_squared = rock_radius_pixels * rock_radius_pixels;
+                
+                if distance_squared <= radius_squared {
+                    let px = (rock_x + dx).max(0).min(target_width as i32 - 1) as u32;
+                    let py = (rock_y + dy).max(0).min(target_height as i32 - 1) as u32;
+                    let idx = ((py * target_width + px) * 4) as usize;
+                    
+                    if idx + 3 < frame.len() {
+                        // Gray color for rocks (0.4, 0.4, 0.4)
+                        frame[idx] = (0.4 * 255.0) as u8;     // Red
+                        frame[idx + 1] = (0.4 * 255.0) as u8; // Green  
+                        frame[idx + 2] = (0.4 * 255.0) as u8; // Blue
+                        frame[idx + 3] = 255;                  // Alpha
+                    }
+                }
+            }
+        }
+    }
+    
     // Draw ants with state-based colors
     for (ant_transform, ant_state) in ant_query.iter() {
         let ant_x = world_to_screen_x(ant_transform.translation.x);
@@ -298,12 +332,17 @@ fn capture_placeholder_frame(video_recorder: &mut VideoRecorder) {
 }
 
 fn should_save_video(performance_tracker: &PerformanceTracker, time: &Time) -> bool {
-    // Save after 90 seconds as intended
+    // Save after 90 seconds OR if early exit conditions are met
     let elapsed = time.elapsed_seconds();
     let time_condition = elapsed > 90.0;
+    let early_exit_condition = performance_tracker.oscillating_ants_count >= 20 || 
+                              performance_tracker.lost_food_carriers_count >= 10;
     
     if time_condition {
-        println!("🎬 Video save triggered: 90 seconds elapsed ({:.1}s), frames: {}", elapsed, performance_tracker.successful_deliveries); // Use any field for frame count debug
+        println!("🎬 Video save triggered: 90 seconds elapsed ({:.1}s)", elapsed);
+    } else if early_exit_condition && elapsed > 15.0 {  // Minimum 15 seconds of footage
+        println!("🎬 Video save triggered: Early exit condition met at {:.1}s (oscillating={}, lost_carriers={})", 
+                elapsed, performance_tracker.oscillating_ants_count, performance_tracker.lost_food_carriers_count);
     }
     
     // Print periodic status to debug what's happening
@@ -311,7 +350,7 @@ fn should_save_video(performance_tracker: &PerformanceTracker, time: &Time) -> b
         println!("📊 Status at {:.0}s: oscillating={}, lost_carriers={}", elapsed, performance_tracker.oscillating_ants_count, performance_tracker.lost_food_carriers_count);
     }
     
-    time_condition // Only save after 90 seconds
+    time_condition || (early_exit_condition && elapsed > 15.0)
 }
 
 fn save_video_on_exit(video_recorder: &mut VideoRecorder, performance_tracker: &PerformanceTracker, generation_info: &GenerationInfo) {

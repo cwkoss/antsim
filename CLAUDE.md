@@ -46,6 +46,25 @@ cargo run
 4. **Performance Systems**: performance_analysis_system, exit_system
 5. **Video System**: video_recording_system with real pheromone data capture
 
+## ⚠️ CRITICAL ANALYSIS WARNING ⚠️
+
+**ALWAYS USE FINAL END-OF-RUN METRICS FOR PERFORMANCE COMPARISON**
+
+When analyzing simulation results, DO NOT use intermediate metrics printed during the run. The simulation outputs many status updates during execution, but ONLY the final summary metrics are accurate for comparison:
+
+✅ **CORRECT**: Use metrics from final success message: 
+```
+🎉 SUCCESS: 90 seconds completed with X.Xs avg goal time!
+```
+
+❌ **WRONG**: Using intermediate debug output during the run:
+```
+📊 Status at XXs: ... (printed during execution)
+🐜 DEBUG ANT analysis ... (real-time status)
+```
+
+**Why This Matters**: Intermediate metrics change as ants make progress. Only the final 90-second completion provides the definitive performance score for cycle-to-cycle comparison.
+
 ## Important Implementation Details
 
 ### Pheromone Trail Visualization

@@ -7,16 +7,19 @@ echo "🐜 Starting Ant Colony Simulation with Automated Video Generation"
 echo "================================================================"
 echo ""
 
-# Get generation description from command line argument
+# Get generation description and optional challenge from command line arguments
 if [ $# -eq 0 ]; then
-    echo "❌ Usage: $0 \"<generation description>\""
+    echo "❌ Usage: $0 \"<generation description>\" [challenge_number]"
     echo "   Example: $0 \"Path persistence optimization with stronger momentum\""
+    echo "   Example: $0 \"Pathfinding around rocks\" 2"
     read -p "Press Enter to exit"
     exit 1
 fi
 
 GENERATION_DESCRIPTION="$1"
+CHALLENGE_NUMBER="${2:-1}"  # Default to challenge 1 if not specified
 echo "📋 This generation will be labeled: '$GENERATION_DESCRIPTION'"
+echo "🎯 Challenge: $CHALLENGE_NUMBER"
 echo ""
 
 # Update generation description in generation_info.json before running simulation
@@ -42,7 +45,7 @@ fi
 
 # Run the simulation
 echo "🚀 Running simulation..."
-if ! cargo run; then
+if ! cargo run -- --challenge "$CHALLENGE_NUMBER"; then
     echo "❌ Simulation failed"
     read -p "Press Enter to exit"
     exit 1
